@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Player - AutoPlay Seller</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        #videoContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #videoPlayer {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .status-overlay {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 14px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255,255,255,0.1);
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #10b981;
+        }
+
+        .status-dot.disconnected {
+            background: #ef4444;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            color: white;
+        }
+
+        .loading-screen.hide {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 6px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 20px;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            z-index: 1001;
+            animation: slideIn 0.3s ease-out;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.hide {
+            animation: slideOut 0.3s ease-out;
+        }
+
+        @keyframes slideOut {
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">🎬 AutoPlay Seller</div>
+        <p style="margin-top: 10px; opacity: 0.9;">Connecting to server...</p>
+    </div>
+
+    <!-- Video Container -->
+    <div id="videoContainer">
+        <video id="videoPlayer" autoplay loop></video>
+    </div>
+
+    <!-- Status Overlay -->
+    <div class="status-overlay">
+        <span class="status-dot disconnected" id="statusDot"></span>
+        <span id="statusText">Disconnected</span>
+    </div>
+
+    <script>
+        const socket = io();
+        const video = document.getElementById('videoPlayer');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const loadingScreen = document.getElementById('loadingScreen');
+        
+        let currentVideo = null;
+        let isMainVideoPlaying = false;
+        let mainVideoUrl = null;
+        let baseUrl = '';
+
+        // Socket connection
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            statusDot.className = 'status-dot connected';
+            statusText.textContent = 'Connected';
+            loadingScreen.classList.add('hide');
+            
+            // Request current config
+            fetchConfig();
+        });
+
+        socket.on('disconnect', () => {
+            console.log('Disconnected from server');
+            statusDot.className = 'status-dot disconnected';
+            statusText.textContent = 'Disconnected';
+        });
+
+        // Play video event from server
+        socket.on('play_video', (data) => {
+            console.log('Play video request:', data);
+            
+            if (data.video_url) {
+                playVideo(data.video_url, data.video_name, false);
+                showNotification(`🎬 Playing: ${data.video_name || 'Video'}`);
+            }
+        });
+
+        // Fetch config from server
+        async function fetchConfig() {
+            try {
+                const response = await fetch('/api/config');
+                const config = await response.json();
+                
+                if (config.base_url) {
+                    baseUrl = config.base_url;
+                }
+
+                if (config.main_video_url) {
+                    mainVideoUrl = config.main_video_url;
+                    playMainVideo();
+                }
+            } catch (error) {
+                console.error('Error fetching config:', error);
+            }
+        }
+
+        // Play video
+        function playVideo(videoUrl, videoName, isMainVideo = false) {
+            currentVideo = videoName;
+            isMainVideoPlaying = isMainVideo;
+            // Prefix with baseUrl if provided and URL is relative
+            if (videoUrl && !/^https?:\/\//i.test(videoUrl) && baseUrl) {
+                video.src = baseUrl.replace(/\/$/, '') + videoUrl;
+            } else {
+                video.src = videoUrl;
+            }
+            video.loop = isMainVideo;
+            video.load();
+            
+            video.play().then(() => {
+                console.log('Playing:', videoName);
+            }).catch(error => {
+                console.error('Error playing video:', error);
+                showNotification('❌ Error playing video', 'error');
+            });
+        }
+
+        // Play main video
+        function playMainVideo() {
+            if (mainVideoUrl) {
+                playVideo(mainVideoUrl, 'Main Video', true);
+            }
+        }
+
+        // Video ended event
+        video.addEventListener('ended', () => {
+            console.log('Video ended:', currentVideo);
+            
+            // If not main video (promo video), notify server and return to main
+            if (!isMainVideoPlaying) {
+                socket.emit('video_ended', { video_name: currentVideo });
+                showNotification('✅ Video completed, returning to main video');
+                
+                // Return to main video after 1 second
+                setTimeout(() => {
+                    playMainVideo();
+                }, 1000);
+            }
+        });
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.textContent = message;
+            
+            if (type === 'error') {
+                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
+            }
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('hide');
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+
+        // Prevent context menu
+        video.addEventListener('contextmenu', (e) => e.preventDefault());
+    </script>
+</body>
+</html>

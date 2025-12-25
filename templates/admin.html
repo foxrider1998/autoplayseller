@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPlay Seller - Admin Panel</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .badge.monitoring {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .badge.idle {
+            background: #6b7280;
+            color: white;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section h3 {
+            color: #374151;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .main-video-info {
+            background: #f3f4f6;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            word-break: break-all;
+            font-size: 14px;
+        }
+
+        .keywords-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        .keywords-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        .keywords-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+
+        .keywords-table tr:hover {
+            background: #f9fafb;
+        }
+
+        .action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+
+        .action-btn.edit {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .action-btn.delete {
+            background: #ef4444;
+            color: white;
+        }
+
+        .action-btn.test {
+            background: #10b981;
+            color: white;
+        }
+
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .log-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-item.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .log-item.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .log-item.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .log-item.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .log-time {
+            font-weight: bold;
+            min-width: 60px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-content h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #374151;
+        }
+
+        .form-group input[type="text"],
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .file-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        .file-input-group input {
+            flex: 1;
+        }
+
+        .file-input-group button {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .player-links {
+            text-align: center;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+
+        .player-links a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .player-links a:hover {
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 AutoPlay Seller - Admin Panel</h1>
+            <div class="status-badges">
+                <div class="badge idle" id="monitorStatus">Idle</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel - Controls -->
+            <div class="panel">
+                <h2>🎮 Controls</h2>
+
+                <!-- Monitoring -->
+                <div class="control-section">
+                    <h3>Comment Monitoring</h3>
+                    <button class="btn btn-success" id="btnStartMonitor">Start Monitoring</button>
+                    <button class="btn btn-danger" id="btnStopMonitor" disabled>Stop Monitoring</button>
+                </div>
+
+                <!-- Main Video -->
+                <div class="control-section">
+                    <h3>🎬 Main Video (Background)</h3>
+                    <div class="main-video-info" id="mainVideoInfo">
+                        <strong>Current:</strong><br>
+                        <span id="mainVideoName">Not configured</span>
+                    </div>
+                    <button class="btn btn-secondary" id="btnConfigMain">⚙️ Configure Main Video</button>
+                    <button class="btn btn-primary" id="btnPlayMain">▶ Play Main Video</button>
+                </div>
+
+                <!-- Live Platform -->
+                <div class="control-section">
+                    <h3>📱 Live Platform</h3>
+                    <div class="main-video-info" id="platformInfo">
+                        <strong>Current:</strong><br>
+                        <span id="platformName">File Simulation</span>
+                    </div>
+                    <button class="btn btn-secondary" id="btnConfigPlatform">⚙️ Configure Platform</button>
+                </div>
+
+                <!-- Stats -->
+                <div class="control-section">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statComments">0</div>
+                            <div class="stat-label">Comments</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statVideos">0</div>
+                            <div class="stat-label">Videos</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Keywords & Logs -->
+            <div>
+                <!-- Keywords Management -->
+                <div class="panel" style="margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2>🔑 Keywords Management</h2>
+                        <button class="btn btn-primary" onclick="showAddKeywordModal()" style="width: auto; padding: 10px 20px; margin: 0;">
+                            ➕ Add Keyword
+                        </button>
+                    </div>
+                    
+                    <div id="keywordsTableContainer">
+                        <div class="empty-state">
+                            <p>Loading keywords...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="panel">
+                    <h2>📝 Activity Log</h2>
+                    <div class="activity-log" id="activityLog">
+                        <div class="log-item info">
+                            <span class="log-time">00:00:00</span>
+                            <span>Server started</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Links -->
+        <div class="player-links">
+            📺 <a href="/player" target="_blank">Open Video Player (for Display/OBS)</a> | 
+            📱 <a href="/mobile" target="_blank">Mobile Control</a>
+        </div>
+    </div>
+
+    <!-- Main Video Config Modal -->
+    <div class="modal" id="mainVideoModal">
+        <div class="modal-content">
+            <h2>Configure Main Video</h2>
+            <div class="form-group">
+                <label>Video File Path:</label>
+                <div class="file-input-group">
+                    <input type="text" id="mainVideoPath" placeholder="C:/path/to/video.mp4">
+                    <button onclick="document.getElementById('mainVideoFileInput').click()">Browse</button>
+                    <input type="file" id="mainVideoFileInput" accept="video/*" style="display:none" onchange="handleMainVideoFile(this)">
+                </div>
+                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                    Select video file yang akan loop sebagai background
+                </p>
+            </div>
+            <div class="modal-actions">
+                <button onclick="saveMainVideo()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    Save
+                </button>
+                <button onclick="closeModal('mainVideoModal')" style="background: #6b7280; color: white;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Platform Configuration Modal -->
+    <div class="modal" id="platformModal">
+        <div class="modal-content">
+            <h2>⚙️ Configure Live Platform</h2>
+            
+            <div class="form-group">
+                <label>Platform:</label>
+                <select id="platformType" onchange="updatePlatformFields()">
+                    <option value="file">File Simulation (Testing)</option>
+                    <option value="tiktokshop">TikTok Shop Live</option>
+                    <option value="shopee">Shopee Live</option>
+                    <option value="tokopedia">Tokopedia Play</option>
+                    <option value="bukalapak">Bukalapak Live</option>
+                    <option value="lazada">Lazada Live</option>
+                    <option value="jdid">JD.ID Live</option>
+                    <option value="blibli">Blibli Live</option>
+                </select>
+            </div>
+
+            <div id="platformCredentials" style="display:none;">
+                <div class="form-group">
+                    <label>Username / Shop ID:</label>
+                    <input type="text" id="platformUsername" placeholder="Enter username or shop ID">
+                </div>
+
+                <div class="form-group">
+                    <label>Password / Access Token:</label>
+                    <input type="password" id="platformPassword" placeholder="Enter password or access token">
+                </div>
+
+                <div class="form-group">
+                    <label>API Key (if required):</label>
+                    <input type="text" id="platformApiKey" placeholder="Enter API key">
+                </div>
+
+                <div class="form-group">
+                    <label>Room ID / Live Session ID:</label>
+                    <input type="text" id="platformRoomId" placeholder="Enter room ID or live session ID">
+                </div>
+
+                <div class="form-group">
+                    <label>Comment Check Interval (seconds):</label>
+                    <input type="number" id="platformInterval" value="1" min="0.5" max="10" step="0.5">
+                </div>
+
+                <div style="background: #fef3c7; border: 1px solid #fbbf24; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 12px;">
+                    <strong>⚠️ Note:</strong> API integration untuk platform live shop memerlukan kredensial resmi dari masing-masing platform. Pastikan Anda memiliki akses API yang valid.
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="testPlatformConnection()" style="background: #10b981; color: white;">
+                    🔍 Test Connection
+                </button>
+                <button onclick="savePlatformConfig()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    Save
+                </button>
+                <button onclick="closeModal('platformModal')" style="background: #6b7280; color: white;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Keyword Modal -->
+    <div class="modal" id="keywordModal">
+        <div class="modal-content">
+            <h2 id="keywordModalTitle">Add Keyword</h2>
+            <input type="hidden" id="editOldKeyword">
+            
+            <div class="form-group">
+                <label>Keyword / Pattern:</label>
+                <input type="text" id="keywordInput" placeholder="keranjang 1">
+            </div>
+
+            <div class="form-group">
+                <label>Video File:</label>
+                <div class="file-input-group">
+                    <input type="text" id="keywordVideoPath" placeholder="C:/path/to/video.mp4">
+                    <button onclick="document.getElementById('keywordVideoFileInput').click()">Browse</button>
+                    <input type="file" id="keywordVideoFileInput" accept="video/*" style="display:none" onchange="handleKeywordVideoFile(this)">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Response Text (Optional):</label>
+                <textarea id="keywordResponseText" placeholder="Terima kasih! Produk akan kami proses segera 🎉"></textarea>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="keywordIsRegex">
+                    <label for="keywordIsRegex">Use as Regex Pattern</label>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button onclick="saveKeyword()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">
+                    Save
+                </button>
+                <button onclick="closeModal('keywordModal')" style="background: #6b7280; color: white;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let appState = {};
+        let keywords = [];
+
+        // Socket events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            fetchStatus();
+            fetchConfig();
+        });
+
+        socket.on('status_update', (data) => {
+            appState = data;
+            updateUI();
+        });
+
+        socket.on('log_update', (log) => {
+            addLogToUI(log);
+        });
+
+        // Fetch status
+        async function fetchStatus() {
+            const response = await fetch('/api/status');
+            appState = await response.json();
+            updateUI();
+        }
+
+        // Fetch config
+        async function fetchConfig() {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            
+            keywords = config.keywords;
+            renderKeywordsTable();
+            
+            // Update main video info
+            if (config.main_video_name) {
+                document.getElementById('mainVideoName').textContent = config.main_video_name;
+            }
+
+            // Update platform info
+            const platformNames = {
+                'file': 'File Simulation',
+                'tiktokshop': 'TikTok Shop Live',
+                'shopee': 'Shopee Live',
+                'tokopedia': 'Tokopedia Play',
+                'bukalapak': 'Bukalapak Live',
+                'lazada': 'Lazada Live',
+                'jdid': 'JD.ID Live',
+                'blibli': 'Blibli Live'
+            };
+
+            if (config.comment_source) {
+                const platformType = config.comment_source.type || 'file';
+                const platformName = platformNames[platformType] || platformType;
+                document.getElementById('platformName').textContent = platformName;
+                
+                // Store in appState for modal
+                if (!appState.config) appState.config = {};
+                appState.config.comment_source = config.comment_source;
+            }
+        }
+
+        // Update UI
+        function updateUI() {
+            // Monitor Status
+            const monitorStatus = document.getElementById('monitorStatus');
+            if (appState.monitoring) {
+                monitorStatus.textContent = '📡 Monitoring Active';
+                monitorStatus.className = 'badge monitoring';
+                document.getElementById('btnStartMonitor').disabled = true;
+                document.getElementById('btnStopMonitor').disabled = false;
+            } else {
+                monitorStatus.textContent = 'Idle';
+                monitorStatus.className = 'badge idle';
+                document.getElementById('btnStartMonitor').disabled = false;
+                document.getElementById('btnStopMonitor').disabled = true;
+            }
+
+            // Stats
+            document.getElementById('statComments').textContent = appState.total_comments_processed || 0;
+            document.getElementById('statVideos').textContent = appState.total_videos_played || 0;
+        }
+
+        // Render keywords table
+        function renderKeywordsTable() {
+            const container = document.getElementById('keywordsTableContainer');
+            
+            if (keywords.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No keywords configured yet. Click "Add Keyword" to get started.</p></div>';
+                return;
+            }
+
+            let html = `
+                <table class="keywords-table">
+                    <thead>
+                        <tr>
+                            <th>Keyword</th>
+                            <th>Video</th>
+                            <th>Regex</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            keywords.forEach(kw => {
+                html += `
+                    <tr>
+                        <td>${kw.keyword}</td>
+                        <td>${kw.video_name || 'No video'}</td>
+                        <td>${kw.is_regex ? '✓' : '-'}</td>
+                        <td>
+                            <button class="action-btn test" onclick="testVideo('${kw.keyword}')">Test</button>
+                            <button class="action-btn edit" onclick="editKeyword('${kw.keyword}')">Edit</button>
+                            <button class="action-btn delete" onclick="deleteKeyword('${kw.keyword}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Add log to UI
+        function addLogToUI(log) {
+            const logContainer = document.getElementById('activityLog');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${log.level}`;
+            logItem.innerHTML = `
+                <span class="log-time">${log.time}</span>
+                <span>${log.message}</span>
+            `;
+            logContainer.insertBefore(logItem, logContainer.firstChild);
+
+            // Keep max 50 logs
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        // Modal functions
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function openModal(modalId) {
+            showModal(modalId);
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+        }
+
+        function showAddKeywordModal() {
+            document.getElementById('keywordModalTitle').textContent = 'Add Keyword';
+            document.getElementById('editOldKeyword').value = '';
+            document.getElementById('keywordInput').value = '';
+            document.getElementById('keywordVideoPath').value = '';
+            document.getElementById('keywordResponseText').value = '';
+            document.getElementById('keywordIsRegex').checked = false;
+            showModal('keywordModal');
+        }
+
+        function editKeyword(keyword) {
+            const kw = keywords.find(k => k.keyword === keyword);
+            if (!kw) return;
+
+            document.getElementById('keywordModalTitle').textContent = 'Edit Keyword';
+            document.getElementById('editOldKeyword').value = keyword;
+            document.getElementById('keywordInput').value = kw.keyword;
+            document.getElementById('keywordVideoPath').value = kw.video_path;
+            document.getElementById('keywordResponseText').value = kw.response_text;
+            document.getElementById('keywordIsRegex').checked = kw.is_regex;
+            showModal('keywordModal');
+        }
+
+        async function deleteKeyword(keyword) {
+            if (!confirm(`Delete keyword "${keyword}"?`)) return;
+
+            const response = await fetch('/api/keyword/delete', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                fetchConfig();
+            } else {
+                alert('Failed: ' + data.message);
+            }
+        }
+
+        async function testVideo(keyword) {
+            const response = await fetch('/api/test-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword })
+            });
+
+            const data = await response.json();
+            if (!data.success) {
+                alert('Failed: ' + data.message);
+            }
+        }
+
+        async function saveKeyword() {
+            const oldKeyword = document.getElementById('editOldKeyword').value;
+            const keyword = document.getElementById('keywordInput').value.trim();
+            const videoPath = document.getElementById('keywordVideoPath').value.trim();
+            const responseText = document.getElementById('keywordResponseText').value.trim();
+            const isRegex = document.getElementById('keywordIsRegex').checked;
+
+            if (!keyword) {
+                alert('Please enter a keyword');
+                return;
+            }
+
+            const url = oldKeyword ? '/api/keyword/update' : '/api/keyword/add';
+            const body = {
+                keyword,
+                video_path: videoPath,
+                response_text: responseText,
+                is_regex: isRegex
+            };
+
+            if (oldKeyword) {
+                body.old_keyword = oldKeyword;
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                closeModal('keywordModal');
+                fetchConfig();
+            } else {
+                alert('Failed: ' + data.message);
+            }
+        }
+
+        async function handleMainVideoFile(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const resp = await fetch('/api/upload-video', { method: 'POST', body: formData });
+                    const data = await resp.json();
+                    if (data.success) {
+                        document.getElementById('mainVideoPath').value = data.path;
+                    } else {
+                        alert('Upload failed: ' + data.message);
+                    }
+                } catch (err) {
+                    alert('Upload error: ' + err.message);
+                }
+            }
+        }
+
+        // Platform configuration functions
+        function updatePlatformFields() {
+            const platformType = document.getElementById('platformType').value;
+            const credentialsDiv = document.getElementById('platformCredentials');
+            
+            if (platformType === 'file') {
+                credentialsDiv.style.display = 'none';
+            } else {
+                credentialsDiv.style.display = 'block';
+            }
+        }
+
+        async function testPlatformConnection() {
+            const platformType = document.getElementById('platformType').value;
+            
+            if (platformType === 'file') {
+                alert('File simulation mode tidak memerlukan koneksi eksternal.');
+                return;
+            }
+
+            const config = {
+                type: platformType,
+                username: document.getElementById('platformUsername').value.trim(),
+                password: document.getElementById('platformPassword').value.trim(),
+                api_key: document.getElementById('platformApiKey').value.trim(),
+                room_id: document.getElementById('platformRoomId').value.trim()
+            };
+
+            if (!config.username || !config.password) {
+                alert('Username dan Password diperlukan untuk test koneksi.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/test-platform', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Koneksi berhasil!\n\n' + data.message);
+                } else {
+                    alert('❌ Koneksi gagal!\n\n' + data.message);
+                }
+            } catch (error) {
+                alert('❌ Error testing connection: ' + error.message);
+            }
+        }
+
+        async function savePlatformConfig() {
+            const platformType = document.getElementById('platformType').value;
+            
+            const config = {
+                type: platformType,
+                check_interval: parseFloat(document.getElementById('platformInterval').value)
+            };
+
+            if (platformType === 'file') {
+                config.file_path = 'comments.txt';
+            } else {
+                config.username = document.getElementById('platformUsername').value.trim();
+                config.password = document.getElementById('platformPassword').value.trim();
+                config.api_key = document.getElementById('platformApiKey').value.trim();
+                config.room_id = document.getElementById('platformRoomId').value.trim();
+
+                if (!config.username || !config.password) {
+                    alert('Username dan Password diperlukan.');
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch('/api/update-platform', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('✅ Platform configuration berhasil disimpan!');
+                    closeModal('platformModal');
+                    fetchConfig();
+                } else {
+                    alert('❌ Failed: ' + data.message);
+                }
+            } catch (error) {
+                alert('❌ Error saving config: ' + error.message);
+            }
+        }
+
+        // Open platform modal - moved to after DOM ready
+        function openPlatformConfig() {
+            // Load current platform config
+            if (appState.config?.comment_source) {
+                const source = appState.config.comment_source;
+                document.getElementById('platformType').value = source.type || 'file';
+                document.getElementById('platformInterval').value = source.check_interval || 1;
+                
+                if (source.type !== 'file') {
+                    document.getElementById('platformUsername').value = source.username || '';
+                    document.getElementById('platformPassword').value = source.password || '';
+                    document.getElementById('platformApiKey').value = source.api_key || '';
+                    document.getElementById('platformRoomId').value = source.room_id || '';
+                }
+            }
+            
+            updatePlatformFields();
+            openModal('platformModal');
+        }
+
+        async function handleKeywordVideoFile(input) {
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                try {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    const resp = await fetch('/api/upload-video', { method: 'POST', body: formData });
+                    const data = await resp.json();
+                    if (data.success) {
+                        document.getElementById('keywordVideoPath').value = data.path;
+                    } else {
+                        alert('Upload failed: ' + data.message);
+                    }
+                } catch (err) {
+                    alert('Upload error: ' + err.message);
+                }
+            }
+        }
+
+        async function saveMainVideo() {
+            const videoPath = document.getElementById('mainVideoPath').value.trim();
+
+            if (!videoPath) {
+                alert('Please enter video path');
+                return;
+            }
+
+            const response = await fetch('/api/update-main-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ video_path: videoPath })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                closeModal('mainVideoModal');
+                fetchConfig();
+            } else {
+                alert('Failed: ' + data.message);
+            }
+        }
+
+        // Button handlers
+        document.getElementById('btnStartMonitor').onclick = async () => {
+            const response = await fetch('/api/start-monitoring', { method: 'POST' });
+            const data = await response.json();
+            if (!data.success) {
+                alert('Failed: ' + data.message);
+            }
+            fetchStatus();
+        };
+
+        document.getElementById('btnStopMonitor').onclick = async () => {
+            await fetch('/api/stop-monitoring', { method: 'POST' });
+            fetchStatus();
+        };
+
+        document.getElementById('btnConfigMain').onclick = () => {
+            fetch('/api/config')
+                .then(r => r.json())
+                .then(config => {
+                    document.getElementById('mainVideoPath').value = config.main_video || '';
+                    showModal('mainVideoModal');
+                });
+        };
+
+        document.getElementById('btnPlayMain').onclick = async () => {
+            await fetch('/api/play-main', { method: 'POST' });
+        };
+
+        document.getElementById('btnConfigPlatform').onclick = () => {
+            openPlatformConfig();
+        };
+
+        // Auto-refresh
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>

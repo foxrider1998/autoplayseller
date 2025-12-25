@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoPlay Seller - Desktop</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 28px;
+        }
+
+        .status-badges {
+            display: flex;
+            gap: 10px;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .badge.connected {
+            background: #10b981;
+            color: white;
+        }
+
+        .badge.disconnected {
+            background: #ef4444;
+            color: white;
+        }
+
+        .badge.monitoring {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .badge.idle {
+            background: #6b7280;
+            color: white;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 20px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .control-section {
+            margin-bottom: 20px;
+        }
+
+        .control-section h3 {
+            color: #374151;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .video-preview {
+            background: #000;
+            border-radius: 10px;
+            aspect-ratio: 16/9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .video-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .video-info {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .video-info p {
+            margin: 5px 0;
+        }
+
+        .keyword-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .keyword-item {
+            background: #f3f4f6;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .keyword-item:hover {
+            background: #e5e7eb;
+        }
+
+        .test-btn {
+            padding: 6px 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .test-btn:hover {
+            background: #764ba2;
+        }
+
+        .activity-log {
+            max-height: 400px;
+            overflow-y: auto;
+            background: #f9fafb;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .log-item {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 14px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-item.info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .log-item.success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .log-item.warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .log-item.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .log-time {
+            font-weight: bold;
+            min-width: 60px;
+        }
+
+        .mobile-link {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .mobile-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .mobile-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🎬 AutoPlay Seller - Desktop Control</h1>
+            <div class="status-badges">
+                <div class="badge disconnected" id="obsStatus">OBS Disconnected</div>
+                <div class="badge idle" id="monitorStatus">Idle</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Panel - Controls -->
+            <div class="panel">
+                <h2>🎮 Controls</h2>
+
+                <!-- OBS Connection -->
+                <div class="control-section">
+                    <h3>OBS Connection</h3>
+                    <button class="btn btn-primary" id="btnConnect">Connect to OBS</button>
+                    <button class="btn btn-secondary" id="btnDisconnect" disabled>Disconnect</button>
+                </div>
+
+                <!-- Monitoring -->
+                <div class="control-section">
+                    <h3>Comment Monitoring</h3>
+                    <button class="btn btn-success" id="btnStartMonitor" disabled>Start Monitoring</button>
+                    <button class="btn btn-danger" id="btnStopMonitor" disabled>Stop Monitoring</button>
+                </div>
+
+                <!-- Video Control -->
+                <div class="control-section">
+                    <h3>Video Control</h3>
+                    <button class="btn btn-primary" id="btnPlayMain" disabled>Play Main Video</button>
+                    <button class="btn btn-secondary" id="btnConfigMain">⚙️ Configure Main Video</button>
+                </div>
+
+                <!-- Main Video Info -->
+                <div class="control-section" id="mainVideoSection" style="display: none;">
+                    <h3>🎬 Main Video</h3>
+                    <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; font-size: 14px; word-break: break-all;">
+                        <strong>Current:</strong><br>
+                        <span id="mainVideoName">Not configured</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="control-section">
+                    <h3>📊 Statistics</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-value" id="statComments">0</div>
+                            <div class="stat-label">Comments</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="statVideos">0</div>
+                            <div class="stat-label">Videos Played</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Keywords -->
+                <div class="control-section">
+                    <h3>🔑 Keywords</h3>
+                    <div class="keyword-list" id="keywordList">
+                        <p style="text-align: center; color: #6b7280;">Loading...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Preview & Logs -->
+            <div>
+                <!-- Video Preview -->
+                <div class="panel" style="margin-bottom: 20px;">
+                    <h2>📺 Video Preview</h2>
+                    <div class="video-preview" id="videoPreview">
+                        <span>No video playing</span>
+                    </div>
+                    <div class="video-info" id="videoInfo" style="display: none;">
+                        <p><strong>Keyword:</strong> <span id="infoKeyword">-</span></p>
+                        <p><strong>Video:</strong> <span id="infoVideo">-</span></p>
+                        <p><strong>Comment:</strong> <span id="infoComment">-</span></p>
+                    </div>
+                </div>
+
+                <!-- Activity Log -->
+                <div class="panel">
+                    <h2>📝 Activity Log</h2>
+                    <div class="activity-log" id="activityLog">
+                        <div class="log-item info">
+                            <span class="log-time">00:00:00</span>
+                            <span>Server started</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Link -->
+        <div class="mobile-link">
+            📱 <a href="/mobile" target="_blank">Open Mobile View</a> | 
+            � <a href="/player" target="_blank">Open Video Player</a> | 
+            �💻 Network: <span id="networkUrl">http://localhost:5000</span>
+        </div>
+    </div>
+
+    <!-- Config Main Video Modal -->
+    <div id="configModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 15px; padding: 30px; max-width: 500px; width: 90%;">
+            <h2 style="color: #667eea; margin-bottom: 20px;">Configure Main Video</h2>
+            
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #374151;">
+                    Video File Path:
+                </label>
+                <input type="text" id="mainVideoPath" 
+                    style="width: 100%; padding: 10px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 14px;"
+                    placeholder="C:/path/to/your/main_video.mp4">
+                <p style="font-size: 12px; color: #6b7280; margin-top: 5px;">
+                    Enter the full path to your main/background video file
+                </p>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="saveMainVideo()" 
+                    style="flex: 1; padding: 12px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    Save
+                </button>
+                <button onclick="closeConfigModal()" 
+                    style="flex: 1; padding: 12px; background: #6b7280; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        let appState = {};
+
+        // Socket events
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            fetchStatus();
+            fetchConfig();
+        });
+
+        socket.on('status_update', (data) => {
+            appState = data;
+            updateUI();
+        });
+
+        socket.on('log_update', (log) => {
+            addLogToUI(log);
+        });
+
+        socket.on('video_playing', (data) => {
+            showVideoPreview(data);
+        });
+
+        socket.on('main_video_playing', () => {
+            hideVideoPreview();
+        });
+
+        // Fetch status
+        async function fetchStatus() {
+            const response = await fetch('/api/status');
+            appState = await response.json();
+            updateUI();
+        }
+
+        // Fetch config
+        async function fetchConfig() {
+            const response = await fetch('/api/config');
+            const config = await response.json();
+            updateKeywordList(config.keywords);
+            
+            // Update main video info
+            if (config.main_video_name) {
+                document.getElementById('mainVideoName').textContent = config.main_video_name;
+                document.getElementById('mainVideoSection').style.display = 'block';
+            }
+            
+            // Update network URL
+            const baseUrl = window.location.origin;
+            document.getElementById('networkUrl').textContent = baseUrl;
+        }
+
+        // Update UI
+        function updateUI() {
+            // OBS Status
+            const obsStatus = document.getElementById('obsStatus');
+            if (appState.obs_connected) {
+                obsStatus.textContent = 'OBS Connected';
+                obsStatus.className = 'badge connected';
+                document.getElementById('btnConnect').disabled = true;
+                document.getElementById('btnDisconnect').disabled = false;
+                document.getElementById('btnStartMonitor').disabled = false;
+                document.getElementById('btnPlayMain').disabled = false;
+            } else {
+                obsStatus.textContent = 'OBS Disconnected';
+                obsStatus.className = 'badge disconnected';
+                document.getElementById('btnConnect').disabled = false;
+                document.getElementById('btnDisconnect').disabled = true;
+                document.getElementById('btnStartMonitor').disabled = true;
+                document.getElementById('btnPlayMain').disabled = true;
+            }
+
+            // Monitor Status
+            const monitorStatus = document.getElementById('monitorStatus');
+            if (appState.monitoring) {
+                monitorStatus.textContent = 'Monitoring Active';
+                monitorStatus.className = 'badge monitoring';
+                document.getElementById('btnStartMonitor').disabled = true;
+                document.getElementById('btnStopMonitor').disabled = false;
+            } else {
+                monitorStatus.textContent = 'Idle';
+                monitorStatus.className = 'badge idle';
+                document.getElementById('btnStopMonitor').disabled = true;
+                if (appState.obs_connected) {
+                    document.getElementById('btnStartMonitor').disabled = false;
+                }
+            }
+
+            // Stats
+            document.getElementById('statComments').textContent = appState.total_comments_processed || 0;
+            document.getElementById('statVideos').textContent = appState.total_videos_played || 0;
+
+            // Activity Log
+            if (appState.activity_log) {
+                const logContainer = document.getElementById('activityLog');
+                logContainer.innerHTML = '';
+                appState.activity_log.forEach(log => {
+                    addLogToUI(log);
+                });
+            }
+        }
+
+        // Add log to UI
+        function addLogToUI(log) {
+            const logContainer = document.getElementById('activityLog');
+            const logItem = document.createElement('div');
+            logItem.className = `log-item ${log.level}`;
+            logItem.innerHTML = `
+                <span class="log-time">${log.time}</span>
+                <span>${log.message}</span>
+            `;
+            logContainer.insertBefore(logItem, logContainer.firstChild);
+
+            // Keep max 50 logs
+            while (logContainer.children.length > 50) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+
+        // Update keyword list
+        function updateKeywordList(keywords) {
+            const list = document.getElementById('keywordList');
+            list.innerHTML = '';
+            
+            keywords.forEach(keyword => {
+                const item = document.createElement('div');
+                item.className = 'keyword-item';
+                item.innerHTML = `
+                    <span>${keyword}</span>
+                    <button class="test-btn" onclick="testVideo('${keyword}')">Test</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Show video preview
+        function showVideoPreview(data) {
+            const preview = document.getElementById('videoPreview');
+            const info = document.getElementById('videoInfo');
+            
+            // Use video URL from server
+            const videoUrl = `/videos/${encodeURIComponent(data.video)}`;
+            preview.innerHTML = `<video src="${videoUrl}" autoplay controls></video>`;
+            
+            document.getElementById('infoKeyword').textContent = data.keyword;
+            document.getElementById('infoVideo').textContent = data.video;
+            document.getElementById('infoComment').textContent = data.comment || '-';
+            info.style.display = 'block';
+        }
+
+        // Hide video preview
+        function hideVideoPreview() {
+            const preview = document.getElementById('videoPreview');
+            const info = document.getElementById('videoInfo');
+            
+            preview.innerHTML = '<span>Main video playing (loop)</span>';
+            info.style.display = 'none';
+        }
+
+        // Button handlers
+        document.getElementById('btnConnect').onclick = async () => {
+            const response = await fetch('/api/connect', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                fetchStatus();
+            } else {
+                alert('Failed to connect: ' + data.message);
+            }
+        };
+
+        document.getElementById('btnDisconnect').onclick = async () => {
+            await fetch('/api/disconnect', { method: 'POST' });
+            fetchStatus();
+        };
+
+        document.getElementById('btnStartMonitor').onclick = async () => {
+            const response = await fetch('/api/start-monitoring', { method: 'POST' });
+            const data = await response.json();
+            if (data.success) {
+                fetchStatus();
+            } else {
+                alert('Failed to start monitoring: ' + data.message);
+            }
+        };
+
+        document.getElementById('btnStopMonitor').onclick = async () => {
+            await fetch('/api/stop-monitoring', { method: 'POST' });
+            fetchStatus();
+        };
+
+        document.getElementById('btnPlayMain').onclick = async () => {
+            await fetch('/api/play-main', { method: 'POST' });
+        };
+
+        document.getElementById('btnConfigMain').onclick = () => {
+            // Show modal
+            document.getElementById('configModal').style.display = 'flex';
+            
+            // Load current path
+            fetch('/api/config')
+                .then(r => r.json())
+                .then(config => {
+                    document.getElementById('mainVideoPath').value = config.main_video || '';
+                });
+        };
+
+        function closeConfigModal() {
+            document.getElementById('configModal').style.display = 'none';
+        }
+
+        async function saveMainVideo() {
+            const videoPath = document.getElementById('mainVideoPath').value.trim();
+            
+            if (!videoPath) {
+                alert('Please enter a video file path');
+                return;
+            }
+            
+            const response = await fetch('/api/update-main-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ video_path: videoPath })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                alert('Main video updated successfully!');
+                closeConfigModal();
+                fetchConfig();
+                fetchStatus();
+            } else {
+                alert('Failed to update main video: ' + data.message);
+            }
+        }
+
+        async function testVideo(keyword) {
+            const response = await fetch('/api/test-video', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword })
+            });
+            
+            const data = await response.json();
+            if (!data.success) {
+                alert('Failed to play video: ' + data.message);
+            }
+        }
+
+        // Auto-refresh status every 5 seconds
+        setInterval(fetchStatus, 5000);
+    </script>
+</body>
+</html>

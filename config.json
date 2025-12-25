@@ -1,0 +1,58 @@
+{
+  "obs_settings": {
+    "host": "localhost",
+    "port": 4455,
+    "password": "",
+    "video_source_name": "VideoPlayer",
+    "scene_name": "Main Scene",
+    "main_video_source": "MainVideo",
+    "main_video_path": "C:\\Users\\arisr\\Videos\\Screen Recordings\\Screen Recording 2025-10-24 130045.mp4"
+  },
+  "comment_keywords": {
+    "keranjang 3": {
+      "video_path": "video.mov",
+      "response_text": "Terima kasih! Produk 3 akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "keranjang 4": {
+      "video_path": "videos/product_4.mp4",
+      "response_text": "Terima kasih! Produk 4 akan kami proses segera 🎉",
+      "is_regex": false
+    },
+    "keranjang 5": {
+      "video_path": "videos/product_5.mp4",
+      "response_text": "Terima kasih! Produk 5 akan kami proses segera 🎉"
+    },
+    "keranjang 6": {
+      "video_path": "videos/product_6.mp4",
+      "response_text": "Terima kasih! Produk 6 akan kami proses segera 🎉"
+    },
+    "keranjang 7": {
+      "video_path": "videos/product_7.mp4",
+      "response_text": "Terima kasih! Produk 7 akan kami proses segera 🎉"
+    },
+    "keranjang 8": {
+      "video_path": "videos/product_8.mp4",
+      "response_text": "Terima kasih! Produk 8 akan kami proses segera 🎉"
+    },
+    "keranjang 9": {
+      "video_path": "videos/product_9.mp4",
+      "response_text": "Terima kasih! Produk 9 akan kami proses segera 🎉"
+    },
+    "keranjang 10": {
+      "video_path": "videos/product_10.mp4",
+      "response_text": "Terima kasih! Produk 10 akan kami proses segera 🎉"
+    }
+  },
+  "comment_source": {
+    "type": "file",
+    "file_path": "comments.txt",
+    "check_interval": 1.0
+  },
+  "video_settings": {
+    "auto_hide_after_play": false,
+    "transition_duration": 0.5,
+    "return_to_main_video": true,
+    "main_video_delay": 1.0
+  }
+}
