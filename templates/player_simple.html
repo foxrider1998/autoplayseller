@@ -18,21 +18,32 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        #videoContainer {
+        .logo-bar {
             position: fixed;
             top: 0;
             left: 0;
+            right: 0;
+            height: 40px; /* compact header space */
+            z-index: 999;
+        }
+
+        #videoContainer {
+            position: fixed;
+            top: 40px;
+            left: 0;
             width: 100vw;
-            height: 100vh;
+            height: calc(100vh - 40px);
             display: flex;
-            align-items: center;
+            align-items: flex-start; /* keep video top-aligned */
             justify-content: center;
+            background: #000;
         }
 
         #videoPlayer {
             width: 100%;
             height: 100%;
             object-fit: contain;
+            object-position: top center;
             background: #000;
         }
 
@@ -157,6 +168,9 @@
         <p style="margin-top: 10px; opacity: 0.9;">Connecting to server...</p>
     </div>
 
+    <!-- Top Logo Space -->
+    <div class="logo-bar"></div>
+
     <!-- Video Container -->
     <div id="videoContainer">
         <video id="videoPlayer" autoplay loop></video>
@@ -177,6 +191,7 @@
         
         let currentVideo = null;
         let isMainVideoPlaying = false;
+        let savedMainTime = 0;
         let mainVideoUrl = null;
         let baseUrl = '';
 
@@ -200,10 +215,27 @@
         // Play video event from server
         socket.on('play_video', (data) => {
             console.log('Play video request:', data);
-            
-            if (data.video_url) {
-                playVideo(data.video_url, data.video_name, false);
-                showNotification(`🎬 Playing: ${data.video_name || 'Video'}`);
+            const t = data.type || 'promo';
+            if (t === 'promo') {
+                // Save current time of main video before switching
+                if (isMainVideoPlaying) {
+                    try { savedMainTime = video.currentTime || 0; } catch (_) {}
+                }
+                if (data.video_url) {
+                    playVideo(data.video_url, data.video_name, false);
+                    showNotification(`🎬 Playing: ${data.video_name || 'Video'}`);
+                }
+            } else if (t === 'main') {
+                const url = data.video_url || mainVideoUrl;
+                const name = data.video_name || 'Main Video';
+                if (url) {
+                    playVideo(url, name, true, savedMainTime || 0);
+                    showNotification(`⏮ Back to main`);
+                }
+            } else {
+                if (data.video_url) {
+                    playVideo(data.video_url, data.video_name, false);
+                }
             }
         });
 
@@ -227,7 +259,7 @@
         }
 
         // Play video
-        function playVideo(videoUrl, videoName, isMainVideo = false) {
+        function playVideo(videoUrl, videoName, isMainVideo = false, resumeTime = 0) {
             currentVideo = videoName;
             isMainVideoPlaying = isMainVideo;
             // Prefix with baseUrl if provided and URL is relative
@@ -238,19 +270,48 @@
             }
             video.loop = isMainVideo;
             video.load();
-            
-            video.play().then(() => {
-                console.log('Playing:', videoName);
-            }).catch(error => {
-                console.error('Error playing video:', error);
-                showNotification('❌ Error playing video', 'error');
-            });
+            const startPlayback = () => {
+                video.muted = false;
+                video.volume = 1.0;
+                video.play().then(() => {
+                    console.log('Playing:', videoName);
+                }).catch(error => {
+                    console.warn('Play failed, trying muted fallback:', error);
+                    // Fallback: try muted autoplay
+                    try {
+                        video.muted = true;
+                        video.play().then(() => {
+                            setTimeout(() => { video.muted = false; video.volume = 1.0; }, 200);
+                        }).catch(err2 => {
+                            console.error('Muted fallback failed:', err2);
+                            showNotification('❌ Error playing video', 'error');
+                        });
+                    } catch (e) {
+                        console.error('Fallback error:', e);
+                        showNotification('❌ Error playing video', 'error');
+                    }
+                });
+            };
+            if (isMainVideo && resumeTime && resumeTime > 0) {
+                const onMeta = () => {
+                    video.removeEventListener('loadedmetadata', onMeta);
+                    try { video.currentTime = resumeTime; } catch (_) {}
+                    const onCanPlay = () => {
+                        video.removeEventListener('canplay', onCanPlay);
+                        startPlayback();
+                    };
+                    video.addEventListener('canplay', onCanPlay);
+                };
+                video.addEventListener('loadedmetadata', onMeta);
+            } else {
+                startPlayback();
+            }
         }
 
         // Play main video
         function playMainVideo() {
             if (mainVideoUrl) {
-                playVideo(mainVideoUrl, 'Main Video', true);
+                playVideo(mainVideoUrl, 'Main Video', true, savedMainTime || 0);
             }
         }
 
@@ -290,6 +351,8 @@
 
         // Prevent context menu
         video.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Removed unmute button and handler
     </script>
 </body>
 </html>

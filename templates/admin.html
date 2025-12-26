@@ -524,6 +524,11 @@
                 <label>Platform:</label>
                 <select id="platformType" onchange="updatePlatformFields()">
                     <option value="file">File Simulation (Testing)</option>
+                    <option value="tiktok_dummy">TikTok Dummy (Example)</option>
+                    <option value="tiktok">TikTok Research API</option>
+                    <option value="tiktok_live">TikTok Live (Connector)</option>
+                    <option value="tiktok_live_socket">TikTok Live (External Socket)</option>
+                    <option value="tiktok_live_py">TikTok Live (Python)</option>
                     <option value="tiktokshop">TikTok Shop Live</option>
                     <option value="shopee">Shopee Live</option>
                     <option value="tokopedia">Tokopedia Play</option>
@@ -535,6 +540,10 @@
             </div>
 
             <div id="platformCredentials" style="display:none;">
+                <div class="form-group">
+                    <label>Server URL (for External Socket):</label>
+                    <input type="text" id="platformServerUrl" placeholder="http://localhost:8081">
+                </div>
                 <div class="form-group">
                     <label>Username / Shop ID:</label>
                     <input type="text" id="platformUsername" placeholder="Enter username or shop ID">
@@ -565,6 +574,96 @@
                 </div>
             </div>
 
+            <!-- TikTok Research API Fields -->
+            <div id="tiktokFields" style="display:none;">
+                <div class="form-group">
+                    <label>Token Env Var (optional):</label>
+                    <input type="text" id="tiktokTokenEnv" placeholder="e.g. TIKTOK_CLIENT_TOKEN">
+                </div>
+                <div class="form-group">
+                    <label>Access Token (optional):</label>
+                    <input type="text" id="tiktokAccessToken" placeholder="Bearer token value">
+                </div>
+                <div class="form-group">
+                    <label>Video ID:</label>
+                    <input type="text" id="tiktokVideoId" placeholder="Numeric video_id">
+                </div>
+                <div class="form-group">
+                    <label>Fields:</label>
+                    <input type="text" id="tiktokFieldsInput" value="id,text,like_count,reply_count,create_time,video_id,parent_comment_id">
+                </div>
+                <div class="form-group">
+                    <label>Max Count (<=100):</label>
+                    <input type="number" id="tiktokMaxCount" value="10" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label>Cursor (start index):</label>
+                    <input type="number" id="tiktokCursor" value="0" min="0" max="1000">
+                </div>
+                <div class="form-group">
+                    <label>Poll Interval (seconds):</label>
+                    <input type="number" id="tiktokPollInterval" value="2" min="0.5" step="0.5">
+                </div>
+
+                <div style="height:1px;background:#e5e7eb;margin:12px 0;"></div>
+                <h3 style="font-size:14px;margin:6px 0 8px 0;">🔐 TikTok OAuth (Authorize URL)</h3>
+                <div class="form-group">
+                    <label>Client Key:</label>
+                    <input type="text" id="tiktokClientKey" placeholder="Your TikTok Client Key">
+                </div>
+                <div class="form-group">
+                    <label>Client Secret:</label>
+                    <input type="password" id="tiktokClientSecret" placeholder="Your TikTok Client Secret">
+                </div>
+                <div class="form-group">
+                    <label>Redirect URI:</label>
+                    <input type="text" id="tiktokRedirectUri" placeholder="https://yourapp.com/callback">
+                </div>
+                <div class="form-group">
+                    <label>Scopes (comma separated):</label>
+                    <input type="text" id="tiktokScopes" placeholder="user.info.basic,video.list">
+                </div>
+                <div class="form-group" style="display:flex;gap:8px;align-items:center;">
+                    <button type="button" onclick="generateTikTokAuthorizeUrl()" style="background:#111827;color:#fff;">Generate Authorize URL</button>
+                    <input type="text" id="tiktokAuthorizeUrl" placeholder="Generated URL will appear here" readonly style="flex:1;">
+                    <button type="button" onclick="copyAuthorizeUrl()">Copy</button>
+                    <button type="button" onclick="openAuthorizeUrl()">Open</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Authorization Code (paste from callback):</label>
+                    <input type="text" id="tiktokAuthCode" placeholder="code=...">
+                </div>
+                <div class="form-group" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                    <button type="button" onclick="exchangeTikTokCode()" style="background:#0ea5e9;color:#fff;">Exchange Code</button>
+                    <button type="button" onclick="refreshTikTokToken()" style="background:#10b981;color:#fff;">Refresh Token</button>
+                    <button type="button" onclick="revokeTikTokAccess()" style="background:#ef4444;color:#fff;">Revoke Access</button>
+                </div>
+
+                <div class="form-group">
+                    <label>Open ID:</label>
+                    <input type="text" id="tiktokOpenId" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Access Token:</label>
+                    <input type="text" id="tiktokAccessTokenDisplay" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Refresh Token:</label>
+                    <input type="text" id="tiktokRefreshToken" readonly>
+                </div>
+                <div class="form-group" style="display:flex;gap:8px;">
+                    <div style="flex:1;">
+                        <label>Expires In (s):</label>
+                        <input type="text" id="tiktokExpiresIn" readonly>
+                    </div>
+                    <div style="flex:1;">
+                        <label>Refresh Expires In (s):</label>
+                        <input type="text" id="tiktokRefreshExpiresIn" readonly>
+                    </div>
+                </div>
+            </div>
+
             <div class="modal-actions">
                 <button onclick="testPlatformConnection()" style="background: #10b981; color: white;">
                     🔍 Test Connection
@@ -582,12 +681,16 @@
     <!-- Add/Edit Keyword Modal -->
     <div class="modal" id="keywordModal">
         <div class="modal-content">
-            <h2 id="keywordModalTitle">Add Keyword</h2>
+            <h2 id="keywordModalTitle">Add Keyword(s)</h2>
             <input type="hidden" id="editOldKeyword">
-            
+
             <div class="form-group">
-                <label>Keyword / Pattern:</label>
-                <input type="text" id="keywordInput" placeholder="keranjang 1">
+                <label>Keyword(s) / Pattern(s):</label>
+                <div id="keywordInputsContainer"></div>
+                <div style="margin-top:8px;">
+                    <button type="button" class="action-btn" style="background:#111827;color:#fff;" onclick="addKeywordField()">+ Add Keyword</button>
+                </div>
+                <p style="font-size:12px;color:#6b7280;margin-top:6px;">Tambahkan beberapa keyword untuk video yang sama. Saat menyimpan, setiap keyword dibuat/diupdate sebagai entri terpisah.</p>
             </div>
 
             <div class="form-group">
@@ -607,7 +710,7 @@
             <div class="form-group">
                 <div class="checkbox-group">
                     <input type="checkbox" id="keywordIsRegex">
-                    <label for="keywordIsRegex">Use as Regex Pattern</label>
+                    <label for="keywordIsRegex">Use as Regex Pattern (applies to all)</label>
                 </div>
             </div>
 
@@ -666,6 +769,10 @@
             // Update platform info
             const platformNames = {
                 'file': 'File Simulation',
+                'tiktok_dummy': 'TikTok Dummy (Example)',
+                'tiktok': 'TikTok Research API',
+                'tiktok_live': 'TikTok Live (Connector)',
+                'tiktok_live_socket': 'TikTok Live (External Socket)',
                 'tiktokshop': 'TikTok Shop Live',
                 'shopee': 'Shopee Live',
                 'tokopedia': 'Tokopedia Play',
@@ -683,6 +790,11 @@
                 // Store in appState for modal
                 if (!appState.config) appState.config = {};
                 appState.config.comment_source = config.comment_source;
+            }
+
+            // Token display
+            if (config.tiktok_oauth) {
+                setTikTokTokenFields(config.tiktok_oauth);
             }
         }
 
@@ -707,11 +819,25 @@
             document.getElementById('statVideos').textContent = appState.total_videos_played || 0;
         }
 
-        // Render keywords table
+        // Group keywords by video_path (one card per video)
+        function getKeywordGroups() {
+            const groupsMap = new Map();
+            (keywords || []).forEach(k => {
+                const key = k.video_path || '__no_video__';
+                if (!groupsMap.has(key)) {
+                    groupsMap.set(key, { video_path: k.video_path || '', video_name: k.video_name || '', items: [] });
+                }
+                groupsMap.get(key).items.push(k);
+            });
+            return Array.from(groupsMap.values());
+        }
+
+        // Render keywords table (grouped)
         function renderKeywordsTable() {
             const container = document.getElementById('keywordsTableContainer');
-            
-            if (keywords.length === 0) {
+            const groups = getKeywordGroups();
+
+            if (!keywords || keywords.length === 0) {
                 container.innerHTML = '<div class="empty-state"><p>No keywords configured yet. Click "Add Keyword" to get started.</p></div>';
                 return;
             }
@@ -720,7 +846,7 @@
                 <table class="keywords-table">
                     <thead>
                         <tr>
-                            <th>Keyword</th>
+                            <th>Keywords</th>
                             <th>Video</th>
                             <th>Regex</th>
                             <th>Actions</th>
@@ -729,16 +855,21 @@
                     <tbody>
             `;
 
-            keywords.forEach(kw => {
+            groups.forEach(g => {
+                const allKw = g.items.map(i => i.keyword).join(', ');
+                const anyRegex = g.items.some(i => i.is_regex);
+                const firstKw = (g.items[0] || {}).keyword || '';
+                const vpEsc = (g.video_path || '').replace(/"/g,'&quot;');
+                const kwAttr = String(firstKw).replace(/&/g,'&amp;').replace(/"/g,'&quot;');
                 html += `
                     <tr>
-                        <td>${kw.keyword}</td>
-                        <td>${kw.video_name || 'No video'}</td>
-                        <td>${kw.is_regex ? '✓' : '-'}</td>
+                        <td>${allKw || '-'}</td>
+                        <td>${g.video_name || 'No video'}</td>
+                        <td>${anyRegex ? '✓' : '-'}</td>
                         <td>
-                            <button class="action-btn test" onclick="testVideo('${kw.keyword}')">Test</button>
-                            <button class="action-btn edit" onclick="editKeyword('${kw.keyword}')">Edit</button>
-                            <button class="action-btn delete" onclick="deleteKeyword('${kw.keyword}')">Delete</button>
+                            <button class="action-btn test" data-kw="${kwAttr}" onclick="testVideoByElem(this)">Test</button>
+                            <button class="action-btn edit" data-vpath="${vpEsc}" onclick="editKeywordGroupByElem(this)">Edit</button>
+                            <button class="action-btn delete" data-vpath="${vpEsc}" onclick="deleteKeywordGroupByElem(this)">Delete</button>
                         </td>
                     </tr>
                 `;
@@ -746,6 +877,39 @@
 
             html += '</tbody></table>';
             container.innerHTML = html;
+        }
+
+        function editKeywordGroup(videoPath) {
+            const items = (keywords || []).filter(k => (k.video_path || '') === (videoPath || ''));
+            if (items.length === 0) return;
+            const values = items.map(i => i.keyword);
+            document.getElementById('keywordModalTitle').textContent = 'Edit Keyword(s)';
+            document.getElementById('editOldKeyword').value = items[0].keyword; // anchor for update
+            resetKeywordFields(values);
+            document.getElementById('keywordVideoPath').value = items[0].video_path || '';
+            document.getElementById('keywordResponseText').value = items[0].response_text || '';
+            document.getElementById('keywordIsRegex').checked = items.some(i => i.is_regex);
+            showModal('keywordModal');
+        }
+
+        async function deleteKeywordGroup(videoPath) {
+            const items = (keywords || []).filter(k => (k.video_path || '') === (videoPath || ''));
+            if (items.length === 0) return;
+            const confirmMsg = `Delete ${items.length} keyword(s) linked to this video?`;
+            if (!confirm(confirmMsg)) return;
+            for (const it of items) {
+                try {
+                    const resp = await fetch('/api/keyword/delete', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ keyword: it.keyword })
+                    });
+                    await resp.json();
+                } catch(e) {
+                    // continue
+                }
+            }
+            fetchConfig();
         }
 
         // Add log to UI
@@ -765,6 +929,16 @@
             }
         }
 
+        function editKeywordGroupByElem(el) {
+            const vp = el.getAttribute('data-vpath') || '';
+            editKeywordGroup(vp);
+        }
+
+        async function deleteKeywordGroupByElem(el) {
+            const vp = el.getAttribute('data-vpath') || '';
+            await deleteKeywordGroup(vp);
+        }
+
         // Modal functions
         function showModal(modalId) {
             document.getElementById(modalId).classList.add('show');
@@ -779,9 +953,9 @@
         }
 
         function showAddKeywordModal() {
-            document.getElementById('keywordModalTitle').textContent = 'Add Keyword';
+            document.getElementById('keywordModalTitle').textContent = 'Add Keyword(s)';
             document.getElementById('editOldKeyword').value = '';
-            document.getElementById('keywordInput').value = '';
+            resetKeywordFields(['']);
             document.getElementById('keywordVideoPath').value = '';
             document.getElementById('keywordResponseText').value = '';
             document.getElementById('keywordIsRegex').checked = false;
@@ -792,9 +966,9 @@
             const kw = keywords.find(k => k.keyword === keyword);
             if (!kw) return;
 
-            document.getElementById('keywordModalTitle').textContent = 'Edit Keyword';
+            document.getElementById('keywordModalTitle').textContent = 'Edit Keyword(s)';
             document.getElementById('editOldKeyword').value = keyword;
-            document.getElementById('keywordInput').value = kw.keyword;
+            resetKeywordFields([kw.keyword]);
             document.getElementById('keywordVideoPath').value = kw.video_path;
             document.getElementById('keywordResponseText').value = kw.response_text;
             document.getElementById('keywordIsRegex').checked = kw.is_regex;
@@ -831,42 +1005,107 @@
             }
         }
 
+        function testVideoByElem(el) {
+            const kw = el.getAttribute('data-kw') || '';
+            testVideo(kw);
+        }
+
+        function addKeywordField(value = '') {
+            const container = document.getElementById('keywordInputsContainer');
+            const row = document.createElement('div');
+            row.className = 'file-input-group';
+            row.style.marginBottom = '8px';
+            row.innerHTML = `
+                <input type="text" class="keywordInput" placeholder="keranjang 1" value="${value.replace(/"/g,'&quot;')}">
+                <button type="button" onclick="this.parentElement.remove()" style="background:#ef4444;">Remove</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function resetKeywordFields(values) {
+            const container = document.getElementById('keywordInputsContainer');
+            container.innerHTML = '';
+            (values && values.length ? values : ['']).forEach(v => addKeywordField(v));
+        }
+
+        function getKeywordValues() {
+            return Array.from(document.querySelectorAll('#keywordInputsContainer .keywordInput'))
+                .map(i => i.value.trim())
+                .filter(v => !!v);
+        }
+
         async function saveKeyword() {
             const oldKeyword = document.getElementById('editOldKeyword').value;
-            const keyword = document.getElementById('keywordInput').value.trim();
+            const keywordValues = getKeywordValues();
             const videoPath = document.getElementById('keywordVideoPath').value.trim();
             const responseText = document.getElementById('keywordResponseText').value.trim();
             const isRegex = document.getElementById('keywordIsRegex').checked;
 
-            if (!keyword) {
-                alert('Please enter a keyword');
+            if (keywordValues.length === 0) {
+                alert('Please enter at least one keyword');
                 return;
             }
-
-            const url = oldKeyword ? '/api/keyword/update' : '/api/keyword/add';
-            const body = {
-                keyword,
-                video_path: videoPath,
-                response_text: responseText,
-                is_regex: isRegex
-            };
-
-            if (oldKeyword) {
-                body.old_keyword = oldKeyword;
-            }
-
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
-
-            const data = await response.json();
-            if (data.success) {
+            // Strategy:
+            // - If editing: first keyword updates the existing entry; remaining keywords are added as new entries
+            // - If adding: all keywords are added as new entries
+            try {
+                if (oldKeyword) {
+                    const first = keywordValues[0];
+                    // Update the original
+                    const respUpd = await fetch('/api/keyword/update', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            old_keyword: oldKeyword,
+                            keyword: first,
+                            video_path: videoPath,
+                            response_text: responseText,
+                            is_regex: isRegex
+                        })
+                    });
+                    const upd = await respUpd.json();
+                    if (!upd.success) throw new Error(upd.message);
+                    // Add the rest
+                    const rest = keywordValues.slice(1);
+                    for (const kw of rest) {
+                        const respAdd = await fetch('/api/keyword/add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                keyword: kw,
+                                video_path: videoPath,
+                                response_text: responseText,
+                                is_regex: isRegex
+                            })
+                        });
+                        const addRes = await respAdd.json();
+                        // ignore duplicate errors silently
+                    }
+                } else {
+                    for (const kw of keywordValues) {
+                        const respAdd = await fetch('/api/keyword/add', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                keyword: kw,
+                                video_path: videoPath,
+                                response_text: responseText,
+                                is_regex: isRegex
+                            })
+                        });
+                        const addRes = await respAdd.json();
+                        if (!addRes.success) {
+                            // Continue if duplicate, stop on other errors
+                            if (!String(addRes.message || '').includes('already exists')) {
+                                throw new Error(addRes.message);
+                            }
+                        }
+                    }
+                }
                 closeModal('keywordModal');
                 fetchConfig();
-            } else {
-                alert('Failed: ' + data.message);
+            } catch (e) {
+                alert('Failed: ' + e.message);
             }
         }
 
@@ -893,11 +1132,29 @@
         function updatePlatformFields() {
             const platformType = document.getElementById('platformType').value;
             const credentialsDiv = document.getElementById('platformCredentials');
-            
+            const tiktokDiv = document.getElementById('tiktokFields');
+
             if (platformType === 'file') {
                 credentialsDiv.style.display = 'none';
+                tiktokDiv.style.display = 'none';
+            } else if (platformType === 'tiktok_dummy') {
+                credentialsDiv.style.display = 'none';
+                tiktokDiv.style.display = 'none';
+            } else if (platformType === 'tiktok') {
+                credentialsDiv.style.display = 'none';
+                tiktokDiv.style.display = 'block';
+            } else if (platformType === 'tiktok_live') {
+                credentialsDiv.style.display = 'block';
+                tiktokDiv.style.display = 'none';
+            } else if (platformType === 'tiktok_live_socket') {
+                credentialsDiv.style.display = 'block';
+                tiktokDiv.style.display = 'none';
+            } else if (platformType === 'tiktok_live_py') {
+                credentialsDiv.style.display = 'block';
+                tiktokDiv.style.display = 'none';
             } else {
                 credentialsDiv.style.display = 'block';
+                tiktokDiv.style.display = 'none';
             }
         }
 
@@ -908,7 +1165,49 @@
                 alert('File simulation mode tidak memerlukan koneksi eksternal.');
                 return;
             }
-
+            if (platformType === 'tiktok_dummy') {
+                alert('Dummy mode tidak memerlukan koneksi eksternal.');
+                return;
+            }
+            if (platformType === 'tiktok_live') {
+                alert('TikTok Live Connector requires Node.js and `npm install` in node_bridge. Save config then Start Monitoring.');
+                return;
+            }
+            if (platformType === 'tiktok_live_socket') {
+                alert('External Socket: jalankan service di folder "getcoment" lalu Start Monitoring.');
+                return;
+            }
+            if (platformType === 'tiktok_live_py') {
+                alert('TikTok Live (Python): pastikan paket TikTokLive terpasang (pip install TikTokLive). Save config lalu Start Monitoring.');
+                return;
+            }
+            if (platformType === 'tiktok') {
+                const body = {
+                    type: 'tiktok',
+                    token_env: document.getElementById('tiktokTokenEnv').value.trim(),
+                    access_token: document.getElementById('tiktokAccessToken').value.trim(),
+                    video_id: document.getElementById('tiktokVideoId').value.trim(),
+                    fields: document.getElementById('tiktokFieldsInput').value.trim(),
+                    max_count: parseInt(document.getElementById('tiktokMaxCount').value || '10', 10),
+                    cursor: parseInt(document.getElementById('tiktokCursor').value || '0', 10)
+                };
+                try {
+                    const resp = await fetch('/api/test-tiktok', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const data = await resp.json();
+                    if (data.success) {
+                        alert('✅ TikTok API OK: ' + data.message);
+                    } else {
+                        alert('❌ TikTok API error: ' + data.message);
+                    }
+                } catch (e) {
+                    alert('❌ Error: ' + e.message);
+                }
+                return;
+            }
             const config = {
                 type: platformType,
                 username: document.getElementById('platformUsername').value.trim(),
@@ -943,14 +1242,44 @@
         async function savePlatformConfig() {
             const platformType = document.getElementById('platformType').value;
             
-            const config = {
-                type: platformType,
-                check_interval: parseFloat(document.getElementById('platformInterval').value)
-            };
-
+            let config = { type: platformType };
             if (platformType === 'file') {
                 config.file_path = 'comments.txt';
+                config.check_interval = parseFloat(document.getElementById('platformInterval').value);
+            } else if (platformType === 'tiktok_dummy') {
+                config.poll_interval = parseFloat(document.getElementById('platformInterval').value || '1');
+            } else if (platformType === 'tiktok_live') {
+                config.live_username = document.getElementById('platformUsername').value.trim();
+                config.poll_interval = parseFloat(document.getElementById('platformInterval').value || '1');
+            } else if (platformType === 'tiktok_live_socket') {
+                config.server_url = document.getElementById('platformServerUrl').value.trim() || 'http://localhost:8081';
+                config.live_username = document.getElementById('platformUsername').value.trim();
+                config.poll_interval = parseFloat(document.getElementById('platformInterval').value || '1');
+            } else if (platformType === 'tiktok_live_py') {
+                config.live_username = document.getElementById('platformUsername').value.trim();
+                config.poll_interval = parseFloat(document.getElementById('platformInterval').value || '1');
+            } else if (platformType === 'tiktok') {
+                config.token_env = document.getElementById('tiktokTokenEnv').value.trim();
+                config.access_token = document.getElementById('tiktokAccessToken').value.trim();
+                config.video_id = document.getElementById('tiktokVideoId').value.trim();
+                config.fields = document.getElementById('tiktokFieldsInput').value.trim();
+                config.max_count = parseInt(document.getElementById('tiktokMaxCount').value || '10', 10);
+                config.cursor = parseInt(document.getElementById('tiktokCursor').value || '0', 10);
+                config.poll_interval = parseFloat(document.getElementById('tiktokPollInterval').value || '2');
+                // OAuth extras for building auth URL later
+                config.client_key = document.getElementById('tiktokClientKey').value.trim();
+                config.redirect_uri = document.getElementById('tiktokRedirectUri').value.trim();
+                config.scope = document.getElementById('tiktokScopes').value.trim();
+                if (!config.video_id) {
+                    alert('Video ID diperlukan.');
+                    return;
+                }
+                if (!config.token_env && !config.access_token) {
+                    alert('Isi Token Env atau Access Token.');
+                    return;
+                }
             } else {
+                config.check_interval = parseFloat(document.getElementById('platformInterval').value);
                 config.username = document.getElementById('platformUsername').value.trim();
                 config.password = document.getElementById('platformPassword').value.trim();
                 config.api_key = document.getElementById('platformApiKey').value.trim();
@@ -982,6 +1311,135 @@
             }
         }
 
+        async function generateTikTokAuthorizeUrl() {
+            const body = {
+                client_key: document.getElementById('tiktokClientKey').value.trim(),
+                redirect_uri: document.getElementById('tiktokRedirectUri').value.trim(),
+                scope: document.getElementById('tiktokScopes').value.trim(),
+                state: Math.random().toString(36).slice(2)
+            };
+            if (!body.client_key || !body.redirect_uri) {
+                alert('Client Key dan Redirect URI wajib diisi');
+                return;
+            }
+            try {
+                const resp = await fetch('/api/tiktok-auth-url', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    document.getElementById('tiktokAuthorizeUrl').value = data.url;
+                } else {
+                    alert('Gagal generate URL: ' + data.message);
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function copyAuthorizeUrl() {
+            const el = document.getElementById('tiktokAuthorizeUrl');
+            if (!el.value) return;
+            navigator.clipboard.writeText(el.value);
+        }
+
+        function openAuthorizeUrl() {
+            const el = document.getElementById('tiktokAuthorizeUrl');
+            if (el.value) window.open(el.value, '_blank');
+        }
+
+        async function exchangeTikTokCode() {
+            const body = {
+                client_key: document.getElementById('tiktokClientKey').value.trim(),
+                client_secret: document.getElementById('tiktokClientSecret').value.trim(),
+                code: document.getElementById('tiktokAuthCode').value.trim()
+            };
+            if (!body.client_key || !body.client_secret || !body.code) {
+                alert('Isi Client Key, Client Secret, dan Code');
+                return;
+            }
+            try {
+                const resp = await fetch('/api/tiktok/exchange-code', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    setTikTokTokenFields(data.data || {});
+                    alert('✅ Token saved');
+                    fetchConfig();
+                } else {
+                    alert('❌ Failed: ' + (data.message?.description || JSON.stringify(data.message)));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function refreshTikTokToken() {
+            const client_key = document.getElementById('tiktokClientKey').value.trim();
+            const refresh_token = document.getElementById('tiktokRefreshToken').value.trim();
+            if (!client_key || !refresh_token) {
+                alert('Client Key dan Refresh Token diperlukan');
+                return;
+            }
+            try {
+                const resp = await fetch('/api/tiktok/refresh-token', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ client_key, refresh_token })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    setTikTokTokenFields(data.data || {});
+                    alert('✅ Token refreshed');
+                    fetchConfig();
+                } else {
+                    alert('❌ Failed: ' + (data.message?.description || JSON.stringify(data.message)));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        async function revokeTikTokAccess() {
+            const open_id = document.getElementById('tiktokOpenId').value.trim();
+            const access_token = document.getElementById('tiktokAccessTokenDisplay').value.trim();
+            if (!open_id || !access_token) {
+                alert('Open ID dan Access Token diperlukan');
+                return;
+            }
+            if (!confirm('Revoke access?')) return;
+            try {
+                const resp = await fetch('/api/tiktok/revoke', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ open_id, access_token })
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    setTikTokTokenFields({});
+                    alert('✅ Access revoked');
+                    fetchConfig();
+                } else {
+                    alert('❌ Failed: ' + (data.message?.description || JSON.stringify(data.message)));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function setTikTokTokenFields(tok) {
+            document.getElementById('tiktokOpenId').value = tok.open_id || '';
+            document.getElementById('tiktokAccessTokenDisplay').value = tok.access_token || '';
+            document.getElementById('tiktokRefreshToken').value = tok.refresh_token || '';
+            document.getElementById('tiktokExpiresIn').value = tok.expires_in || '';
+            document.getElementById('tiktokRefreshExpiresIn').value = tok.refresh_expires_in || '';
+        }
+
         // Open platform modal - moved to after DOM ready
         function openPlatformConfig() {
             // Load current platform config
@@ -990,7 +1448,30 @@
                 document.getElementById('platformType').value = source.type || 'file';
                 document.getElementById('platformInterval').value = source.check_interval || 1;
                 
-                if (source.type !== 'file') {
+                if (source.type === 'tiktok') {
+                    document.getElementById('tiktokTokenEnv').value = source.token_env || '';
+                    document.getElementById('tiktokAccessToken').value = source.access_token || '';
+                    document.getElementById('tiktokVideoId').value = source.video_id || '';
+                    document.getElementById('tiktokFieldsInput').value = source.fields || 'id,text,like_count,reply_count,create_time,video_id,parent_comment_id';
+                    document.getElementById('tiktokMaxCount').value = source.max_count || 10;
+                    document.getElementById('tiktokCursor').value = source.cursor || 0;
+                    document.getElementById('tiktokPollInterval').value = source.poll_interval || 2.0;
+                    document.getElementById('tiktokClientKey').value = source.client_key || '';
+                    document.getElementById('tiktokRedirectUri').value = source.redirect_uri || '';
+                    document.getElementById('tiktokScopes').value = source.scope || '';
+                } else if (source.type === 'tiktok_dummy') {
+                    document.getElementById('platformInterval').value = source.poll_interval || 1.0;
+                } else if (source.type === 'tiktok_live') {
+                    document.getElementById('platformUsername').value = source.live_username || '';
+                    document.getElementById('platformInterval').value = source.poll_interval || 1;
+                } else if (source.type === 'tiktok_live_socket') {
+                    document.getElementById('platformServerUrl').value = source.server_url || 'http://localhost:8081';
+                    document.getElementById('platformUsername').value = source.live_username || '';
+                    document.getElementById('platformInterval').value = source.poll_interval || 1;
+                } else if (source.type === 'tiktok_live_py') {
+                    document.getElementById('platformUsername').value = source.live_username || '';
+                    document.getElementById('platformInterval').value = source.poll_interval || 1;
+                } else if (source.type !== 'file') {
                     document.getElementById('platformUsername').value = source.username || '';
                     document.getElementById('platformPassword').value = source.password || '';
                     document.getElementById('platformApiKey').value = source.api_key || '';

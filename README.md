@@ -34,10 +34,45 @@ pip install -r requirements.txt
 Atau install manual:
 
 ```powershell
+### Sumber Komentar: TikTok Research API
+
+Selain file lokal, Anda dapat menarik komentar langsung dari TikTok Research API `Query Video Comments`.
 pip install obs-websocket-py watchdog pillow requests pydantic
 ```
 
 ### 2. Setup OBS Studio
+1) Pastikan token akses klien tersedia dari endpoint OAuth `/v2/oauth/token`.
+
+2) Simpan token secara aman via environment variable di Windows PowerShell:
+
+```powershell
+$env:TIKTOK_CLIENT_TOKEN = "clt.example12345Example12345Example"
+```
+
+3) Ubah konfigurasi `config.json` agar menggunakan sumber `tiktok`:
+
+```json
+{
+   "comment_source": {
+      "type": "tiktok",
+      "token_env": "TIKTOK_CLIENT_TOKEN",
+      "video_id": 12345678901,
+      "fields": "id,text,like_count,reply_count,create_time,video_id,parent_comment_id",
+      "max_count": 100,
+      "cursor": 0,
+      "poll_interval": 2.0
+   }
+}
+```
+
+Catatan:
+- Endpoint: `https://open.tiktokapis.com/v2/research/video/comment/list/?fields=...` (HTTP POST)
+- Header `Authorization: Bearer <token>` dan `Content-Type: application/json` digunakan otomatis.
+- TikTok API tidak mengembalikan username; aplikasi menggunakan placeholder `tiktok:<comment_id>` sebagai `username` untuk keperluan pencocokan.
+- Komentar yang berisi informasi pribadi akan dipulihkan sesuai kebijakan API (redaksi otomatis).
+
+Jika kembali ke sumber file, set `comment_source.type` ke `file` seperti sebelumnya.
+
 
 1. **Install OBS Studio** (jika belum ada)
    - Download: https://obsproject.com/
@@ -415,6 +450,8 @@ Buat scene berbeda untuk kategori produk:
     "video_path": "videos/product_1.mp4",
     "scene_name": "Fashion Scene"
   },
+   Ketika `comment_source.type` adalah `tiktok`, aplikasi akan melakukan polling komentar video sesuai konfigurasi dan mencocokkannya dengan `comment_keywords` seperti sumber file.
+
   "keranjang 50": {
     "video_path": "videos/product_50.mp4",
     "scene_name": "Electronics Scene"

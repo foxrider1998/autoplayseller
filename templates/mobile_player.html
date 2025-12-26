@@ -19,31 +19,98 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             position: fixed;
             width: 100%;
-            height: 100%;
+            height: 100dvh; /* ensure full device viewport */
         }
 
         #videoContainer {
             position: fixed;
-            top: 0;
-            left: 0;
+            inset: 0;
             width: 100vw;
-            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100); /* full screen */
             display: flex;
             align-items: center;
             justify-content: center;
             background: #000;
+            z-index: 1;
+        }
+
+        /* Comments Panel */
+        #commentsPanel {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 60dvh; /* show on lower portion */
+            bottom: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.75) 60%);
+            padding: 10px 12px 14px 12px;
+            z-index: 900;
+            pointer-events: none; /* don't block taps */
+        }
+
+        #commentsHeader {
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+
+        #commentsList {
+            max-height: calc(40dvh - 80px);
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+
+        .commentItem {
+            color: #fff;
+            font-size: 13px;
+            margin-bottom: 8px;
+            background: rgba(0,0,0,0.35);
+            border-radius: 8px;
+            padding: 8px;
+            transition: background 0.4s ease, box-shadow 0.4s ease;
+        }
+        .commentItem.new {
+            background: rgba(16,185,129,0.25);
+            box-shadow: 0 0 12px rgba(16,185,129,0.35);
+        }
+
+        .commentItem .cTime {
+            color: #93c5fd;
+            font-size: 11px;
+            margin-right: 6px;
+            display: inline-block;
+        }
+        .commentItem .cUser {
+            color: #34d399;
+            font-weight: 600;
+            margin-right: 6px;
+        }
+        .commentItem .cText {
+            color: #fff;
         }
 
         #videoPlayer {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+            width: 100vw;
+            height: calc(var(--vh, 1vh) * 100);
+            object-fit: cover; /* default */
+            object-position: center top;
             background: #000;
         }
 
+        /* Responsive fit classes */
+        #videoPlayer.fit-cover {
+            object-fit: cover;
+            object-position: center top;
+        }
+        #videoPlayer.fit-contain {
+            object-fit: contain;
+            object-position: center center;
+        }
+
         .status-bar {
-            position: fixed;
-            top: 0;
+                position: fixed;
+                top: 0;
             left: 0;
             right: 0;
             background: linear-gradient(180deg, rgba(0,0,0,0.8) 0%, transparent 100%);
@@ -53,6 +120,15 @@
             justify-content: space-between;
             align-items: center;
         }
+
+            .logo-bar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 40px; /* compact header space */
+                z-index: 1002; /* above video */
+            }
 
         .status-dot {
             display: inline-block;
@@ -159,6 +235,7 @@
                 opacity: 0;
             }
         }
+        /* Removed unmute button */
     </style>
 </head>
 <body>
@@ -169,9 +246,17 @@
         <p style="margin-top: 10px; opacity: 0.9; font-size: 14px;">Mobile Player</p>
     </div>
 
+    <!-- Top Logo Space -->
+    <div class="logo-bar"></div>
+
     <!-- Video Container -->
     <div id="videoContainer">
         <video id="videoPlayer" autoplay playsinline loop></video>
+        <!-- Comments Panel -->
+        <div id="commentsPanel">
+            <div id="commentsHeader">💬 Komentar Terbaru</div>
+            <div id="commentsList"></div>
+        </div>
     </div>
 
     <!-- Status Bar -->
@@ -183,15 +268,51 @@
     </div>
 
     <script>
+        // Fix mobile viewport height (address 100vh issues on iOS/Android)
+        function updateVh() {
+            const vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        updateVh();
+        window.addEventListener('resize', updateVh);
+        window.addEventListener('orientationchange', updateVh);
+
         const socket = io();
         const video = document.getElementById('videoPlayer');
         const statusDot = document.getElementById('statusDot');
         const statusText = document.getElementById('statusText');
         const loadingScreen = document.getElementById('loadingScreen');
+        const commentsList = document.getElementById('commentsList');
+        const commentsPanel = document.getElementById('commentsPanel');
+        // Unmute button removed
         
         let currentVideo = null;
         let isMainVideoPlaying = false;
+        let savedMainTime = 0;
         let mainVideoUrl = null;
+        let commentsBuffer = [];
+        let hasInteracted = false;
+
+        // Unmute only after first user interaction
+        function handleFirstInteraction() {
+            if (hasInteracted) return;
+            hasInteracted = true;
+            try {
+                video.muted = false;
+                video.volume = 1.0;
+                // Resume playback if paused by policy
+                video.play().catch(() => {});
+            } catch (_) {}
+            // Remove listeners after first interaction
+            document.body.removeEventListener('touchstart', handleFirstInteraction);
+            document.body.removeEventListener('click', handleFirstInteraction);
+        }
+        document.body.addEventListener('touchstart', handleFirstInteraction, { passive: true });
+        document.body.addEventListener('click', handleFirstInteraction);
+        // Auto-refresh comments every second
+        let commentsRenderTimer = setInterval(() => {
+            try { renderComments(); } catch (_) {}
+        }, 1000);
 
         // Prevent page scroll
         document.body.addEventListener('touchmove', (e) => {
@@ -214,13 +335,35 @@
             statusText.textContent = 'Disconnected';
         });
 
+        // Receive live comments
+        socket.on('comment', (data) => {
+            if (!data || !data.text) return;
+            appendComment(data);
+        });
+
         // Play video event from server
         socket.on('play_video', (data) => {
             console.log('Play video request:', data);
-            
-            if (data.video_url) {
-                playVideo(data.video_url, data.video_name, false);
-                showNotification(`🎬 ${data.video_name || 'Video'}`);
+            const t = data.type || 'promo';
+            if (t === 'promo') {
+                if (isMainVideoPlaying) {
+                    try { savedMainTime = video.currentTime || 0; } catch (_) {}
+                }
+                if (data.video_url) {
+                    playVideo(data.video_url, data.video_name, false);
+                    showNotification(`🎬 ${data.video_name || 'Video'}`);
+                }
+            } else if (t === 'main') {
+                const url = data.video_url || mainVideoUrl;
+                const name = data.video_name || 'Main Video';
+                if (url) {
+                    playVideo(url, name, true, savedMainTime || 0);
+                    showNotification('⏮ Back to main');
+                }
+            } else {
+                if (data.video_url) {
+                    playVideo(data.video_url, data.video_name, false);
+                }
             }
         });
 
@@ -240,20 +383,46 @@
         }
 
         // Play video
-        function playVideo(videoUrl, videoName, isMainVideo = false) {
+        function playVideo(videoUrl, videoName, isMainVideo = false, resumeTime = 0) {
             currentVideo = videoName;
             isMainVideoPlaying = isMainVideo;
             
             video.src = videoUrl;
             video.loop = isMainVideo;
             video.load();
-            
-            video.play().then(() => {
-                console.log('Playing:', videoName);
-            }).catch(error => {
-                console.error('Error playing video:', error);
-                showNotification('❌ Error playing video', 'error');
-            });
+            const onMetaFit = () => {
+                adjustVideoFit();
+            };
+            video.addEventListener('loadedmetadata', onMetaFit, { once: true });
+            const startPlayback = () => {
+                // Start muted to satisfy mobile autoplay policies
+                video.muted = true;
+                video.volume = 0.0;
+                video.play().then(() => {
+                    console.log('Playing (muted):', videoName);
+                    // If the user already interacted, unmute
+                    if (hasInteracted) {
+                        try { video.muted = false; video.volume = 1.0; } catch (_) {}
+                    }
+                }).catch(error => {
+                    console.warn('Autoplay blocked, waiting for user gesture:', error);
+                    // Will resume on first touch/click via handleFirstInteraction
+                });
+            };
+            if (isMainVideo && resumeTime && resumeTime > 0) {
+                const onMeta = () => {
+                    video.removeEventListener('loadedmetadata', onMeta);
+                    try { video.currentTime = resumeTime; } catch (_) {}
+                    const onCanPlay = () => {
+                        video.removeEventListener('canplay', onCanPlay);
+                        startPlayback();
+                    };
+                    video.addEventListener('canplay', onCanPlay);
+                };
+                video.addEventListener('loadedmetadata', onMeta);
+            } else {
+                startPlayback();
+            }
         }
 
         // Play main video
@@ -268,7 +437,7 @@
             console.log('Video ended:', currentVideo);
             
             if (!isMainVideoPlaying) {
-                socket.emit('video_ended', { video_name: currentVideo });
+                socket.emit('video_ended', { video_name: currentVideo, type: 'promo' });
                 showNotification('✅ Returning to main video');
                 
                 setTimeout(() => {
@@ -277,26 +446,87 @@
             }
         });
 
-        // Show notification
+        // Show notification (disabled per request)
         function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            
-            if (type === 'error') {
-                notification.style.background = 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)';
-            }
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.classList.add('hide');
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
+            // No-op: hide/disable popup alerts
+            try { console.debug('Notification suppressed:', message, type); } catch (_) {}
         }
 
         // Prevent context menu
         video.addEventListener('contextmenu', (e) => e.preventDefault());
+
+        // Adjust video fit based on aspect ratio vs viewport
+        function adjustVideoFit() {
+            try {
+                const vw = video.videoWidth;
+                const vh = video.videoHeight;
+                if (!vw || !vh) return;
+                const vidAspect = vw / vh;
+                const winAspect = window.innerWidth / window.innerHeight;
+                // If video wider than viewport, fit via contain; else cover
+                if (vidAspect >= winAspect) {
+                    video.classList.add('fit-contain');
+                    video.classList.remove('fit-cover');
+                } else {
+                    video.classList.add('fit-cover');
+                    video.classList.remove('fit-contain');
+                }
+            } catch (e) {
+                // noop
+            }
+        }
+        window.addEventListener('resize', adjustVideoFit);
+        window.addEventListener('orientationchange', adjustVideoFit);
+
+        // Append a comment to list
+        function appendComment(c) {
+            commentsBuffer.unshift({
+                username: c.username || 'user',
+                text: c.text || '',
+                timestamp: c.timestamp || '',
+                _new: true
+            });
+            // Keep last 50
+            commentsBuffer = commentsBuffer.slice(0, 50);
+            renderComments();
+        }
+
+        function renderComments() {
+            const frag = document.createDocumentFragment();
+            let hasNew = false;
+            for (const c of commentsBuffer) {
+                const item = document.createElement('div');
+                item.className = 'commentItem';
+                const time = c.timestamp ? `<span class="cTime">${c.timestamp}</span>` : '';
+                const user = `<span class="cUser">${c.username}</span>`;
+                const text = `<span class="cText">${escapeHtml(c.text)}</span>`;
+                item.innerHTML = `${time}${user}${text}`;
+                if (c._new) {
+                    hasNew = true;
+                    item.classList.add('new');
+                    // remove highlight after a short delay
+                    setTimeout(() => { item.classList.remove('new'); c._new = false; }, 1200);
+                }
+                frag.appendChild(item);
+            }
+            commentsList.innerHTML = '';
+            commentsList.appendChild(frag);
+            // Minimize forced reflow: only adjust scroll when new comments exist
+            if (hasNew) {
+                try { commentsList.scrollTop = 0; } catch (_) {}
+            }
+        }
+
+        function escapeHtml(str) {
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Unmute button removed
     </script>
 </body>
 </html>

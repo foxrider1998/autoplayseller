@@ -6,18 +6,13 @@
     "video_source_name": "VideoPlayer",
     "scene_name": "Main Scene",
     "main_video_source": "MainVideo",
-    "main_video_path": "C:\\Users\\arisr\\Videos\\Screen Recordings\\Screen Recording 2025-10-24 130045.mp4"
+    "main_video_path": "videos\\FULL_NADHOM_ALFIYAH_1_-_108_Ibnu_Malik_-_By_Kuntriksi_Ellail.mp4"
   },
   "comment_keywords": {
     "keranjang 3": {
-      "video_path": "video.mov",
+      "video_path": "videos\\video.mov",
       "response_text": "Terima kasih! Produk 3 akan kami proses segera 🎉",
       "is_regex": true
-    },
-    "keranjang 4": {
-      "video_path": "videos/product_4.mp4",
-      "response_text": "Terima kasih! Produk 4 akan kami proses segera 🎉",
-      "is_regex": false
     },
     "keranjang 5": {
       "video_path": "videos/product_5.mp4",
@@ -31,23 +26,72 @@
       "video_path": "videos/product_7.mp4",
       "response_text": "Terima kasih! Produk 7 akan kami proses segera 🎉"
     },
-    "keranjang 8": {
-      "video_path": "videos/product_8.mp4",
-      "response_text": "Terima kasih! Produk 8 akan kami proses segera 🎉"
+    "test": {
+      "video_path": "videos\\video.mov",
+      "response_text": "Terima kasih! test akan kami proses segera 🎉",
+      "is_regex": true
     },
-    "keranjang 9": {
-      "video_path": "videos/product_9.mp4",
-      "response_text": "Terima kasih! Produk 9 akan kami proses segera 🎉"
+    "ares": {
+      "video_path": "videos\\video.mov",
+      "response_text": "Terima kasih! Produk 3 akan kami proses segera 🎉",
+      "is_regex": true
     },
-    "keranjang 10": {
-      "video_path": "videos/product_10.mp4",
-      "response_text": "Terima kasih! Produk 10 akan kami proses segera 🎉"
+    "coba": {
+      "video_path": "videos\\video.mov",
+      "response_text": "Terima kasih! Produk 3 akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "cobva": {
+      "video_path": "videos\\video.mov",
+      "response_text": "Terima kasih! Produk 3 akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "garansi": {
+      "video_path": "videos\\video.mov",
+      "response_text": "Terima kasih! garansi akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "grnsi": {
+      "video_path": "videos\\video.mov",
+      "response_text": "Terima kasih! grnsi akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "eta": {
+      "video_path": "videos\\arisr-1-fvdf.mp4",
+      "response_text": "Terima kasih! Produk 4 akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "et": {
+      "video_path": "videos\\arisr-1-fvdf.mp4",
+      "response_text": "Terima kasih! Produk 4 akan kami proses segera 🎉",
+      "is_regex": false
+    },
+    "kak": {
+      "video_path": "videos\\arisr-1-fvdf.mp4",
+      "response_text": "Terima kasih! Produk 4 akan kami proses segera 🎉",
+      "is_regex": false
+    },
+    "kk": {
+      "video_path": "videos\\arisr-1-fvdf.mp4",
+      "response_text": "Terima kasih! Produk 4 akan kami proses segera 🎉",
+      "is_regex": false
+    },
+    "ko": {
+      "video_path": "videos\\once_the_lights_go_off_the_magic_comes_on_with_Photo_to_video.mp4",
+      "response_text": "Terima kasih! Produk 8 akan kami proses segera 🎉",
+      "is_regex": true
+    },
+    "berapa": {
+      "video_path": "videos\\20251006_221600000_iOS.MP4",
+      "response_text": "Terima kasih! Produk 9 akan kami proses segera 🎉",
+      "is_regex": true
     }
   },
   "comment_source": {
-    "type": "file",
-    "file_path": "comments.txt",
-    "check_interval": 1.0
+    "type": "tiktok_live_socket",
+    "server_url": "http://localhost:8081",
+    "live_username": "@leo_giovannii",
+    "poll_interval": 1.0
   },
   "video_settings": {
     "auto_hide_after_play": false,

@@ -5,3 +5,17 @@
 [2024-11-09 10:30:00] buyer123: keranjang 1
 [2024-11-09 10:31:30] buyer456: keranjang 3
 [2024-11-09 10:32:15] shopper789: mau keranjang 2 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 2 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 2 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 2 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
+[2024-11-09 10:32:15] shopper789: mau keranjang 3 dong
