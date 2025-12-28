@@ -540,31 +540,31 @@
             </div>
 
             <div id="platformCredentials" style="display:none;">
-                <div class="form-group">
+                <div class="form-group" id="fieldServerUrl">
                     <label>Server URL (for External Socket):</label>
                     <input type="text" id="platformServerUrl" placeholder="http://localhost:8081">
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="fieldUsername">
                     <label>Username / Shop ID:</label>
                     <input type="text" id="platformUsername" placeholder="Enter username or shop ID">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="fieldPassword">
                     <label>Password / Access Token:</label>
                     <input type="password" id="platformPassword" placeholder="Enter password or access token">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="fieldApiKey">
                     <label>API Key (if required):</label>
                     <input type="text" id="platformApiKey" placeholder="Enter API key">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="fieldRoomId">
                     <label>Room ID / Live Session ID:</label>
                     <input type="text" id="platformRoomId" placeholder="Enter room ID or live session ID">
                 </div>
 
-                <div class="form-group">
+                <div class="form-group" id="fieldInterval">
                     <label>Comment Check Interval (seconds):</label>
                     <input type="number" id="platformInterval" value="1" min="0.5" max="10" step="0.5">
                 </div>
@@ -1133,28 +1133,68 @@
             const platformType = document.getElementById('platformType').value;
             const credentialsDiv = document.getElementById('platformCredentials');
             const tiktokDiv = document.getElementById('tiktokFields');
+            const fServer = document.getElementById('fieldServerUrl');
+            const fUser = document.getElementById('fieldUsername');
+            const fPass = document.getElementById('fieldPassword');
+            const fApi = document.getElementById('fieldApiKey');
+            const fRoom = document.getElementById('fieldRoomId');
+            const fInterval = document.getElementById('fieldInterval');
 
             if (platformType === 'file') {
                 credentialsDiv.style.display = 'none';
                 tiktokDiv.style.display = 'none';
+                return;
             } else if (platformType === 'tiktok_dummy') {
                 credentialsDiv.style.display = 'none';
                 tiktokDiv.style.display = 'none';
+                return;
             } else if (platformType === 'tiktok') {
                 credentialsDiv.style.display = 'none';
                 tiktokDiv.style.display = 'block';
+                return;
             } else if (platformType === 'tiktok_live') {
                 credentialsDiv.style.display = 'block';
                 tiktokDiv.style.display = 'none';
+                // Only username + interval
+                fServer.style.display = 'none';
+                fUser.style.display = 'block';
+                fPass.style.display = 'none';
+                fApi.style.display = 'none';
+                fRoom.style.display = 'none';
+                fInterval.style.display = 'block';
+                return;
             } else if (platformType === 'tiktok_live_socket') {
                 credentialsDiv.style.display = 'block';
                 tiktokDiv.style.display = 'none';
+                // Server URL + username + interval
+                fServer.style.display = 'block';
+                fUser.style.display = 'block';
+                fPass.style.display = 'none';
+                fApi.style.display = 'none';
+                fRoom.style.display = 'none';
+                fInterval.style.display = 'block';
+                return;
             } else if (platformType === 'tiktok_live_py') {
                 credentialsDiv.style.display = 'block';
                 tiktokDiv.style.display = 'none';
+                // Only username + interval
+                fServer.style.display = 'none';
+                fUser.style.display = 'block';
+                fPass.style.display = 'none';
+                fApi.style.display = 'none';
+                fRoom.style.display = 'none';
+                fInterval.style.display = 'block';
+                return;
             } else {
                 credentialsDiv.style.display = 'block';
                 tiktokDiv.style.display = 'none';
+                // Generic platforms show all
+                fServer.style.display = 'block';
+                fUser.style.display = 'block';
+                fPass.style.display = 'block';
+                fApi.style.display = 'block';
+                fRoom.style.display = 'block';
+                fInterval.style.display = 'block';
             }
         }
 

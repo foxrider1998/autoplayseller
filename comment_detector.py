@@ -21,7 +21,7 @@ from tiktok_api import fetch_video_comments, TikTokAPIError
 
 try:
     from TikTokLive import TikTokLiveClient
-    from TikTokLive.types.events import CommentEvent
+    from TikTokLive.events import CommentEvent
 except Exception:
     TikTokLiveClient = None  # Will validate at runtime
 
@@ -551,7 +551,7 @@ class TikTokLivePyDetector(CommentDetector):
         self.running = False
         self._backoff = 1.0  # seconds, grows on failures
 
-        @self.client.on("comment")
+        @self.client.on(CommentEvent)
         async def on_comment(event: CommentEvent):
             try:
                 text = (event.comment or '').strip()

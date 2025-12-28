@@ -1,12 +1,22 @@
 # AutoPlay Seller - Aplikasi Autoplay Video untuk Livestream Jualan
 
-Aplikasi desktop yang secara otomatis memutar video produk ketika ada komentar "keranjang 1-100" di livestream. Compatible dengan TikTok Shop, Shopee, dan platform jualan online lainnya. Terintegrasi dengan OBS Studio untuk streaming.
+Aplikasi untuk otomatis memutar video produk saat ada komentar seperti "keranjang 1-100". Sekarang tersedia 2 mode:
+
+- Web App (Sederhana, tanpa OBS) — Admin Panel, Player, dan Mobile Player langsung dari browser.
+- OBS Mode (lama) — Integrasi ke OBS via obs-websocket.
 
 ## ✨ Fitur Utama
 
 - 🎥 **Autoplay Video**: Otomatis memutar video produk saat ada komentar
-- 🔌 **Auto-Detect OBS**: One-click connection, auto-detect OBS & port (NEW!)
-- 🎨 **Visual Config Editor**: UI untuk manage keywords & upload video
+- 📱 **Mobile Player**: Video portrait full screen + overlay komentar real-time
+- 💬 **Multi Sumber Komentar**: File, TikTok Research API, TikTok Live (Node/Python), External Socket
+- 🧩 **Admin Panel**: Kelola keyword (multi-keyword per produk), upload video, pilih sumber komentar
+- 🚦 **Antrean Promo + Cooldown**: Main video berhenti saat promo, lanjut otomatis; cooldown 1 menit per produk
+- 🔤 **Regex Support**: Flexible keyword matching dengan regex pattern
+- 🧭 **Top-aligned Portrait**: Video portrait penuhi layar; landscape otomatis fit agar lebar pas
+- 🟢 **Real-time Broadcast**: Komentar tetap disiarkan meski sedang memutar promo
+- 🎨 **Visual Config Editor (legacy)**: UI untuk manage keywords & upload video (mode OBS)
+- 🔌 **Auto-Detect OBS (legacy)**: One-click connection, auto-detect OBS & port
 - 🔤 **Regex Support**: Flexible keyword matching dengan regex pattern
 - 🔧 **Konfigurasi Fleksibel**: Mudah mengatur keyword dan video untuk 1-100 produk
 - 📺 **Integrasi OBS**: Seamless integration dengan OBS Studio via WebSocket
@@ -18,12 +28,12 @@ Aplikasi desktop yang secara otomatis memutar video produk ketika ada komentar "
 
 - **Windows 10/11** (atau OS lain yang support Python)
 - **Python 3.8+** (Download dari https://www.python.org/)
-- **OBS Studio** versi 28.0+ (Download dari https://obsproject.com/)
-- **obs-websocket plugin** (Built-in di OBS Studio 28+)
+- (Opsional untuk mode OBS) **OBS Studio** 28.0+ (obs-websocket built-in)
+- (Opsional untuk TikTok Live Node) **Node.js 16+** untuk `node_bridge` atau `getcomment`
 
 ## 🚀 Instalasi
 
-### 1. Install Python Dependencies
+### 1) Install Python Dependencies
 
 Buka PowerShell/Command Prompt di folder aplikasi, lalu jalankan:
 
@@ -31,16 +41,16 @@ Buka PowerShell/Command Prompt di folder aplikasi, lalu jalankan:
 pip install -r requirements.txt
 ```
 
-Atau install manual:
+Tambahan (opsional):
 
-```powershell
-### Sumber Komentar: TikTok Research API
+- TikTok Live (Python):
+   ```powershell
+   pip install TikTokLive
+   ```
 
-Selain file lokal, Anda dapat menarik komentar langsung dari TikTok Research API `Query Video Comments`.
-pip install obs-websocket-py watchdog pillow requests pydantic
-```
+- TikTok Research API (opsional): sudah termasuk helper `tiktok_api.py` di `requirements.txt`.
 
-### 2. Setup OBS Studio
+### 2) (Opsional) Setup OBS Studio
 1) Pastikan token akses klien tersedia dari endpoint OAuth `/v2/oauth/token`.
 
 2) Simpan token secara aman via environment variable di Windows PowerShell:
@@ -104,7 +114,42 @@ Jika kembali ke sumber file, set `comment_source.type` ke `file` seperti sebelum
 
 ## ⚙️ Konfigurasi
 
-### Option 1: Visual Config Editor (Recommended - NEW! 🎉)
+### Mode Web App (Direkomendasikan)
+
+Jalankan server web dan gunakan Admin Panel di browser.
+
+```powershell
+python web_app.py
+```
+
+Setelah jalan:
+
+- Admin Panel: http://localhost:5000/admin
+- Player: http://localhost:5000/player
+- Mobile Player: http://localhost:5000/mobile
+
+Di Admin:
+
+- Atur Main Video (browse/upload)
+- Kelola Keywords: multi-keyword per produk, Edit/Delete grup per video
+- Pilih Sumber Komentar pada menu Platform:
+   - `file`: baca `comments.txt`
+   - `tiktok_dummy`: komentar dummy untuk testing
+   - `tiktok`: TikTok Research API (per video_id)
+   - `tiktok_live`: TikTok-Live-Connector via Node bridge (NDJSON)
+   - `tiktok_live_socket`: server Socket.IO eksternal (folder `getcomment`)
+   - `tiktok_live_py`: TikTokLive (Python) hanya pakai `username`
+
+Fitur Player/Mobile:
+
+- Video portrait full screen; landscape otomatis fit agar lebar pas
+- Komentar overlay real-time, highlight komentar baru
+- Autoplay mengikuti kebijakan browser: mulai muted, unmute setelah sentuhan pertama
+- Saat promo diputar, komentar tetap tampil real-time; scanning promo dihentikan sementara
+- Setelah promo selesai, kembali ke main video dan resume timestamp terakhir
+- Cooldown produk: komentar yang memicu promo yang sama tidak akan memutar ulang selama 60 detik
+
+### Option 1: Visual Config Editor (Legacy - OBS)
 
 1. **Jalankan Aplikasi**
    ```powershell
@@ -134,7 +179,7 @@ Jika kembali ke sumber file, set `comment_source.type` ke `file` seperti sebelum
 
 📖 **Detail lengkap**: Lihat [UPDATE_CONFIG_EDITOR.md](UPDATE_CONFIG_EDITOR.md)
 
-### Option 2: Manual Edit `config.json`
+### Option 2: Manual Edit `config.json` (Legacy/Advanced)
 
 ```json
 {
@@ -257,7 +302,7 @@ print("✓ Config generated for 100 products!")
 
 📖 **Detail Auto-Detect**: Lihat [AUTO_DETECT_OBS.md](AUTO_DETECT_OBS.md)
 
-### Mode 1: Testing dengan File Comments
+### Mode Web: Testing dengan File Comments
 
 1. **Jalankan Aplikasi**
    ```powershell
@@ -282,11 +327,43 @@ print("✓ Config generated for 100 products!")
    - Save file
    - Video akan otomatis play di OBS!
 
-### Mode 2: Integrasi Live dengan Platform
+### Mode Web: Integrasi Live dengan Platform
 
 Untuk integrasi dengan TikTok Shop / Shopee / platform lain, ada beberapa cara:
 
-#### Cara A: Browser Extension (Recommended)
+#### Opsi A: External Socket.IO (`getcomment`)
+
+Server eksternal yang mem-push event TikTok Live ke Socket.IO. Jalankan di folder `getcomment`:
+
+```powershell
+cd getcomment
+npm install
+node .\server.js
+```
+
+Di Admin → Platform pilih `tiktok_live_socket`, isi `server_url` dan `username`.
+
+#### Opsi B: TikTok Live (Python)
+
+Lebih simpel, tanpa Node:
+
+```powershell
+pip install TikTokLive
+```
+
+Di Admin → Platform pilih `tiktok_live_py`, isi `username` (contoh: `@tokolivekamu` tanpa @ juga bisa).
+
+#### Opsi C: TikTok-Live-Connector (Node Bridge)
+
+Gunakan bridge Node di `node_bridge/tiktok_live_bridge.js` (otomatis dipanggil oleh server Python):
+
+```powershell
+cd node_bridge
+npm install
+node .\tiktok_live_bridge.js --uniqueId username
+```
+
+Lalu di Admin → Platform pilih `tiktok_live` dan isi `live_username`.
 
 1. Install browser extension untuk capture komentar
 2. Extension akan write komentar ke `comments.txt`
@@ -322,7 +399,7 @@ Beberapa platform menyediakan API untuk livestream comments:
    - Set OBS encoding sesuai internet speed
    - Monitor CPU usage
 
-## 🎯 Workflow Livestream
+## 🎯 Workflow (Mode Web)
 
 ```
 ┌─────────────────────┐
@@ -344,32 +421,30 @@ Beberapa platform menyediakan API untuk livestream comments:
            │ Match! → product_1.mp4
            ▼
 ┌─────────────────────┐
-│  OBS Controller     │
-│  Play Video         │
+│  Web Server         │
+│  Emit play_video    │
 └──────────┬──────────┘
            │
            ▼
 ┌─────────────────────┐
-│  OBS Studio         │
-│  Stream ke Platform │
+│  Browser Player     │
+│  Main/Promo Video   │
 └─────────────────────┘
 ```
 
-## 📁 Struktur File
+## 📁 Struktur File (ringkas)
 
 ```
 autoplayseller/
-├── main.py                 # Aplikasi GUI utama
-├── comment_detector.py     # Modul deteksi komentar
-├── obs_controller.py       # Modul kontrol OBS
-├── config.json            # Konfigurasi aplikasi
-├── comments.txt           # File simulasi komentar
-├── requirements.txt       # Python dependencies
-├── README.md             # Dokumentasi ini
-└── videos/               # Folder video produk
-    ├── product_1.mp4
-    ├── product_2.mp4
-    └── ...
+├── web_app.py                 # Server web (Admin/Player/Mobile)
+├── comment_detector.py        # Sumber komentar (file/tiktok/live)
+├── tiktok_api.py              # Helper TikTok Research API
+├── node_bridge/               # Bridge Node (optional)
+├── getcomment/                # Server Socket.IO eksternal (optional)
+├── templates/                 # admin.html, player.html, mobile_player.html
+├── config.json                # Konfigurasi
+├── comments.txt               # Simulasi komentar
+└── videos/                    # Folder video produk
 ```
 
 ## 🔧 Troubleshooting
@@ -413,6 +488,16 @@ autoplayseller/
 4. Restart monitoring
 
 ## 🎨 Customization
+
+### Cooldown Produk
+
+Cooldown default 60 detik per `video_path`. Ingin ubah? Saya bisa tambahkan opsi di Admin jika diperlukan.
+
+### Tampilan Mobile
+
+- Video portrait: full screen (`object-fit: cover`)
+- Video landscape: auto `contain` agar lebar pas
+- Overlay komentar: highlight komentar baru dan auto-refresh setiap detik
 
 ### Menambah Variasi Keyword
 
@@ -491,9 +576,10 @@ Free to use untuk personal dan komersial.
 
 Dibuat dengan:
 - Python 3
-- Tkinter (GUI)
-- obs-websocket-py (OBS Integration)
-- Watchdog (File monitoring)
+- Flask + Flask-SocketIO (Web server & realtime)
+- TikTokLive (opsional, Python live client)
+- tiktok-live-connector (opsional, Node)
+- Socket.IO (opsional, external server)
 
 ---
 

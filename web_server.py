@@ -263,8 +263,16 @@ def start_monitoring():
 @app.route('/api/stop-monitoring', methods=['POST'])
 def stop_monitoring():
     """Stop monitoring comments"""
-    global monitoring
-    
+    global monitoring, detector
+
+    # Stop detector/connector immediately
+    try:
+        if detector:
+            detector.stop()
+    except Exception:
+        pass
+
+    # Signal monitoring loop to exit
     monitoring = False
     with state_lock:
         app_state['monitoring'] = False
