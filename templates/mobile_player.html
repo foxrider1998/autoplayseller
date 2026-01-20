@@ -45,6 +45,7 @@
             padding: 10px 12px 14px 12px;
             z-index: 900;
             pointer-events: none; /* don't block taps */
+            opacity: 0;
         }
 
         #commentsHeader {
@@ -119,6 +120,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            opacity: 0;
         }
 
             .logo-bar {
@@ -253,10 +255,10 @@
     <div id="videoContainer">
         <video id="videoPlayer" autoplay playsinline loop></video>
         <!-- Comments Panel -->
-        <div id="commentsPanel">
+        <!-- <div id="commentsPanel">
             <div id="commentsHeader">💬 Komentar Terbaru</div>
             <div id="commentsList"></div>
-        </div>
+        </div> -->
     </div>
 
     <!-- Status Bar -->
